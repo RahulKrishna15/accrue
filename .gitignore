@@ -1,0 +1,17 @@
+# dependencies / builds
+node_modules/
+.next/
+out/
+build/
+target/
+test-ledger/
+
+# env / secrets
+.env*
+*.pem
+*-keypair.json
+
+# misc
+.DS_Store
+*.tsbuildinfo
+.vercel
