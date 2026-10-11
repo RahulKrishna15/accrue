@@ -1,0 +1,187 @@
+@import "tailwindcss";
+
+/*
+  Accrue tokens. Brand palette: olive #606C38, forest #283618, ivory #FEFAE0,
+  amber #DDA15E, burnt orange #BC6C25. Derived tints/shades stay in these hues;
+  the only added hue is one red for errors. Ratios are measured (WCAG 2.x).
+
+  Roles
+  - ink            main text, primary button fill
+  - muted          secondary text (never on forest: use panel-muted there)
+  - accent         burnt orange: the one action/accent colour. Fills, icons,
+                   focus rings, large/bold text only (3.8:1 on ivory)
+  - accent-strong  darker burnt orange for small text and labelled buttons
+  - income         amber: income / earning only. Never text on ivory (2.1:1)
+  - panel-*        forest "earnings" surface where amber can be text (5.7:1)
+
+  Z scale (the only z-index values used): sticky header z-30, popovers z-40.
+  Dialogs use the native top layer and need none.
+*/
+:root {
+  --bg: #fefae0; /* ivory */
+  --surface: #fffceb; /* raised ivory */
+  --sunk: #f4edc9; /* inset ivory */
+  --ink: #283618; /* forest on ivory 12.2:1 */
+  --muted: #606c38; /* olive on ivory 5.4:1, on sunk 4.8:1 */
+  --line: rgb(96 108 56 / 0.22);
+  --line-strong: #7c8656; /* input borders, 3.7:1 */
+  --primary: #283618;
+  --on-primary: #fefae0;
+  --accent: #bc6c25; /* 3.8:1: large text, icons, focus */
+  --accent-strong: #8f501a; /* 6.0:1 on ivory; ivory label on it 6.0:1 */
+  --on-accent: #fefae0;
+  --accent-soft: rgb(188 108 37 / 0.12);
+  --income: #dda15e;
+  --income-soft: rgb(221 161 94 / 0.28);
+  --danger: #a33a2a; /* 6.3:1 on ivory */
+  --danger-soft: rgb(163 58 42 / 0.1);
+  --panel: #283618;
+  --panel-ink: #fefae0; /* 12.2:1 */
+  --panel-muted: #b7be8f; /* 6.6:1 */
+  --panel-income: #dda15e; /* 5.7:1 */
+  --panel-line: rgb(254 250 224 / 0.14);
+  --shadow: rgb(40 54 24 / 0.08);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1b2510;
+    --surface: #213016;
+    --sunk: #172010;
+    --ink: #fefae0; /* 15.1:1 on bg, 13.3:1 on surface */
+    --muted: #b7be8f; /* 8.2:1 on bg, 7.2:1 on surface */
+    --line: rgb(183 190 143 / 0.18);
+    --line-strong: #6f7a49; /* 3.5:1 */
+    --primary: #fefae0;
+    --on-primary: #1b2510;
+    --accent: #d27a2e; /* 5.0:1 on bg */
+    --accent-strong: #e08a3e; /* 6.0:1 on bg, 5.3:1 on surface */
+    --on-accent: #1b2510; /* 6.0:1 on accent-strong */
+    --accent-soft: rgb(224 138 62 / 0.14);
+    --income: #dda15e; /* 7.1:1 on bg */
+    --income-soft: rgb(221 161 94 / 0.22);
+    --danger: #e8836b; /* 6.0:1 on bg */
+    --danger-soft: rgb(232 131 107 / 0.12);
+    --panel: #283618;
+    --panel-ink: #fefae0;
+    --panel-muted: #b7be8f;
+    --panel-income: #dda15e;
+    --panel-line: rgb(254 250 224 / 0.12);
+    --shadow: rgb(10 14 6 / 0.4);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #1b2510;
+  --surface: #213016;
+  --sunk: #172010;
+  --ink: #fefae0;
+  --muted: #b7be8f;
+  --line: rgb(183 190 143 / 0.18);
+  --line-strong: #6f7a49;
+  --primary: #fefae0;
+  --on-primary: #1b2510;
+  --accent: #d27a2e;
+  --accent-strong: #e08a3e;
+  --on-accent: #1b2510;
+  --accent-soft: rgb(224 138 62 / 0.14);
+  --income: #dda15e;
+  --income-soft: rgb(221 161 94 / 0.22);
+  --danger: #e8836b;
+  --danger-soft: rgb(232 131 107 / 0.12);
+  --panel: #283618;
+  --panel-ink: #fefae0;
+  --panel-muted: #b7be8f;
+  --panel-income: #dda15e;
+  --panel-line: rgb(254 250 224 / 0.12);
+  --shadow: rgb(10 14 6 / 0.4);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-sunk: var(--sunk);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-on-accent: var(--on-accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-income: var(--income);
+  --color-income-soft: var(--income-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-panel: var(--panel);
+  --color-panel-ink: var(--panel-ink);
+  --color-panel-muted: var(--panel-muted);
+  --color-panel-income: var(--panel-income);
+  --color-panel-line: var(--panel-line);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  /* Shape rule: panels 14px, controls 10px, status badges full pill. */
+  --radius-panel: 14px;
+  --radius-control: 10px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Amounts: monospace with tabular digits everywhere. */
+.num {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "zero" 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--income-soft);
+}
+
+.skeleton {
+  background: var(--sunk);
+  border-radius: 6px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton {
+    background: linear-gradient(90deg, var(--sunk) 0%, var(--line) 50%, var(--sunk) 100%);
+    background-size: 200% 100%;
+    animation: skeleton 1.6s ease-in-out infinite;
+  }
+  @keyframes skeleton {
+    from {
+      background-position: 200% 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
+  .press {
+    transition:
+      transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+      background-color 0.2s,
+      border-color 0.2s,
+      color 0.2s;
+  }
+  .press:active:not(:disabled) {
+    transform: translateY(1px) scale(0.985);
+  }
+}
+
+input[type="range"] {
+  accent-color: var(--accent);
+}
