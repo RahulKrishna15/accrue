@@ -117,7 +117,7 @@ export function TextInput({
   return (
     <div
       className={cx(
-        "flex h-11 items-center rounded-control border bg-surface px-3 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent",
+        "flex h-11 items-center rounded-control border bg-surface px-3 transition-colors focus-within:border-accent focus-within:ring-1 focus-within:ring-accent",
         invalid ? "border-danger" : "border-line-strong",
         className,
       )}
@@ -145,7 +145,7 @@ export function Select({ className, size = "md", children, ...props }: Omit<Comp
       <select
         className={cx(
           "w-full cursor-pointer appearance-none truncate rounded-control border border-line-strong bg-surface pr-10 pl-3 text-ink",
-          "transition-colors hover:border-ink/50 disabled:cursor-not-allowed disabled:opacity-45",
+          "transition-colors hover:border-ink/50 focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-45",
           size === "sm" ? "h-10 text-sm" : "h-11 text-[15px]",
         )}
         {...props}

@@ -81,7 +81,7 @@ export function FundsExplorer() {
             </button>
           ))}
         </div>
-        <label className="flex h-10 items-center gap-2 rounded-control border border-line-strong bg-surface px-3 focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent sm:w-72">
+        <label className="flex h-10 items-center gap-2 rounded-control border border-line-strong bg-surface px-3 transition-colors focus-within:border-accent focus-within:ring-1 focus-within:ring-accent sm:w-72">
           <MagnifyingGlass size={18} className="text-muted" aria-hidden />
           <span className="sr-only">Search funds</span>
           <input
