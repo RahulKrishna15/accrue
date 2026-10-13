@@ -1,17 +1,26 @@
-import type { ButtonHTMLAttributes, ComponentProps, ReactNode } from "react";
+import { CaretDown } from "@phosphor-icons/react/ssr";
+import type { ButtonHTMLAttributes, ComponentProps, CSSProperties, ReactNode } from "react";
 import { formatUnits } from "@/lib/accrue/format";
 
 export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
 }
 
-type Variant = "primary" | "accent" | "secondary" | "ghost" | "danger";
+/** Position in an entrance sequence; pair with className="enter" (see globals.css). */
+export function enter(i: number, stepMs?: number): CSSProperties {
+  return { "--enter-i": i, ...(stepMs ? { "--enter-step": `${stepMs}ms` } : {}) } as CSSProperties;
+}
+
+type Variant = "primary" | "accent" | "secondary" | "ghost" | "danger" | "panel" | "panelGhost";
 const variants: Record<Variant, string> = {
   primary: "bg-primary text-on-primary hover:opacity-90",
   accent: "bg-accent-strong text-on-accent hover:opacity-90",
   secondary: "border border-line-strong text-ink hover:bg-sunk",
   ghost: "text-ink hover:bg-sunk",
   danger: "border border-danger text-danger hover:bg-danger-soft",
+  // On forest panels only: ivory fill (12.2:1) and an outlined companion.
+  panel: "bg-panel-ink text-panel hover:opacity-90",
+  panelGhost: "border border-panel-muted text-panel-ink hover:bg-panel-line",
 };
 
 export function buttonClass(variant: Variant = "primary", size: "sm" | "md" | "lg" = "md") {
@@ -42,7 +51,7 @@ export function Skeleton({ className }: { className?: string }) {
   return <div aria-hidden className={cx("skeleton", className)} />;
 }
 
-/** Base-unit amount in mono tabular digits, always rounded down. */
+/** Base-unit amount in tabular digits, always rounded down. */
 export function Amount({
   value,
   decimals = 2,
@@ -118,10 +127,32 @@ export function TextInput({
         id={id}
         aria-invalid={invalid || undefined}
         aria-describedby={invalid ? `${id}-error` : `${id}-help`}
-        className="h-full w-full min-w-0 bg-transparent text-ink outline-none placeholder:text-muted focus-visible:outline-none"
+        className="h-full w-full min-w-0 bg-transparent text-ink outline-none placeholder:text-muted focus-visible:outline-none!"
         {...props}
       />
       {suffix ? <span className="ml-2 shrink-0 text-sm text-muted">{suffix}</span> : null}
+    </div>
+  );
+}
+
+/**
+ * Native select with the same frame as TextInput: the platform list stays (keyboard,
+ * mobile pickers), only the closed control is restyled with one caret.
+ */
+export function Select({ className, size = "md", children, ...props }: Omit<ComponentProps<"select">, "size"> & { size?: "sm" | "md" }) {
+  return (
+    <div className={cx("relative", className)}>
+      <select
+        className={cx(
+          "w-full cursor-pointer appearance-none truncate rounded-control border border-line-strong bg-surface pr-10 pl-3 text-ink",
+          "transition-colors hover:border-ink/50 disabled:cursor-not-allowed disabled:opacity-45",
+          size === "sm" ? "h-10 text-sm" : "h-11 text-[15px]",
+        )}
+        {...props}
+      >
+        {children}
+      </select>
+      <CaretDown size={16} weight="bold" aria-hidden className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-muted" />
     </div>
   );
 }
@@ -130,10 +161,18 @@ export function PageHeader({ title, description, actions }: { title: string; des
   return (
     <div className="flex flex-col gap-4 pb-8 sm:flex-row sm:items-end sm:justify-between">
       <div className="max-w-[65ch]">
-        <h1 className="text-3xl font-semibold tracking-tight text-ink md:text-4xl">{title}</h1>
-        {description ? <p className="mt-2 leading-relaxed text-muted">{description}</p> : null}
+        <h1 className="enter text-3xl font-semibold tracking-tight text-ink md:text-4xl">{title}</h1>
+        {description ? (
+          <p className="enter mt-2 leading-relaxed text-muted" style={enter(1)}>
+            {description}
+          </p>
+        ) : null}
       </div>
-      {actions ? <div className="flex shrink-0 gap-3">{actions}</div> : null}
+      {actions ? (
+        <div className="enter flex shrink-0 gap-3" style={enter(1)}>
+          {actions}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
+import { AppWash } from "@/components/backgrounds";
 import { DemoControls } from "@/components/demo-controls";
 import { Providers } from "@/components/providers";
 import { SiteFooter, SiteHeader } from "@/components/site-header";
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#fefae0" },
+    { media: "(prefers-color-scheme: light)", color: "#f6f6f0" },
     { media: "(prefers-color-scheme: dark)", color: "#1b2510" },
   ],
 };
@@ -37,7 +38,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </a>
         <Providers>
           <SiteHeader />
-          <main id="main" className="flex flex-1 flex-col">
+          <main id="main" className="relative isolate flex flex-1 flex-col">
+            <AppWash />
             {children}
           </main>
           <SiteFooter />

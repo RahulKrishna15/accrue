@@ -15,3 +15,6 @@ test-ledger/
 .DS_Store
 *.tsbuildinfo
 .vercel
+
+# macOS metadata files written on exFAT/FAT drives
+._*

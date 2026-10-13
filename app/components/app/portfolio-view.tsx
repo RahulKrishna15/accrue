@@ -11,8 +11,9 @@ import { useWallet } from "@/lib/wallet/context";
 import { ConnectGate } from "../connect-gate";
 import { EarningsCard } from "../earnings-card";
 import { LiveAmount } from "../live-amount";
+import { FadeIn, NumberTicker } from "../motion";
 import { TxStatus } from "../tx-status";
-import { Amount, Button, EmptyState, Panel, Skeleton, Stat, buttonClass } from "../ui";
+import { Amount, Button, EmptyState, Panel, Skeleton, Stat, buttonClass, enter } from "../ui";
 
 export function PortfolioView() {
   return (
@@ -49,8 +50,8 @@ function Portfolio() {
   const invested = list.reduce((a, p) => a + p.holder.totalInvested, 0n);
 
   return (
-    <div className="flex flex-col gap-8">
-      <Panel className="p-5 sm:p-6">
+    <FadeIn className="flex flex-col gap-8">
+      <Panel className="enter p-5 sm:p-6">
         <dl className="grid grid-cols-2 gap-6 lg:grid-cols-4">
           <div className="col-span-2 flex flex-col gap-1 lg:col-span-1">
             <dt className="text-sm text-muted">Claimable now, all funds</dt>
@@ -58,8 +59,9 @@ function Portfolio() {
               <LiveAmount positions={list} now={accrue.now} tailClassName="text-[0.65em]" />
             </dd>
           </div>
+          {/* Counts up after a claim while the claimable total settles to zero. */}
           <Stat label="Claimed to date">
-            <Amount value={claimed} />
+            <NumberTicker value={claimed} prefix="$" />
           </Stat>
           <Stat label="Principal invested">
             <Amount value={invested} />
@@ -70,14 +72,15 @@ function Portfolio() {
         </dl>
       </Panel>
 
-      <ul className="grid gap-6 lg:grid-cols-2">
-        {list.map((p) => (
-          <li key={p.fund.mint}>
+      {/* auto-fit: three positions fill one row on wide screens instead of leaving an empty cell. */}
+      <ul className="grid items-start gap-6 md:grid-cols-[repeat(auto-fit,minmax(20rem,1fr))]">
+        {list.map((p, i) => (
+          <li key={p.fund.mint} className="enter" style={enter(i + 1, 80)}>
             <PositionCard position={p} />
           </li>
         ))}
       </ul>
-    </div>
+    </FadeIn>
   );
 }
 
@@ -127,9 +130,10 @@ function PortfolioSkeleton() {
   return (
     <div aria-busy="true" aria-label="Loading holdings" className="flex flex-col gap-8">
       <Skeleton className="h-28 rounded-panel" />
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         <Skeleton className="h-80 rounded-panel" />
         <Skeleton className="h-80 rounded-panel" />
+        <Skeleton className="hidden h-80 rounded-panel xl:block" />
       </div>
     </div>
   );

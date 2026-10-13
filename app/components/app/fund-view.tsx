@@ -2,6 +2,7 @@
 
 import type { Address } from "@solana/kit";
 import { ArrowLeft, ArrowRight, MagnifyingGlass } from "@phosphor-icons/react";
+import { AnimatePresence } from "motion/react";
 import Link from "next/link";
 import { accrue } from "@/lib/accrue";
 import { formatBps, formatDate, formatDuration, formatUnits, shortAddress } from "@/lib/accrue/format";
@@ -10,7 +11,8 @@ import { fundDailyRate } from "@/lib/accrue/math";
 import type { Fund } from "@/lib/accrue/types";
 import { useWallet } from "@/lib/wallet/context";
 import { EarningsCard } from "../earnings-card";
-import { Amount, EmptyState, FundMark, Panel, Skeleton, Stat, StatusBadge, buttonClass } from "../ui";
+import { FadeIn } from "../motion";
+import { Amount, EmptyState, FundMark, Panel, Skeleton, Stat, StatusBadge, buttonClass, enter } from "../ui";
 import { EventRow } from "./activity-feed";
 import { CapMeter } from "./funds-explorer";
 import { InvestPanel } from "./invest-panel";
@@ -33,7 +35,11 @@ export function FundView({ mint }: { mint: Address }) {
       />
     );
   }
-  return <FundDetail fund={fund.data} />;
+  return (
+    <FadeIn>
+      <FundDetail fund={fund.data} />
+    </FadeIn>
+  );
 }
 
 function FundDetail({ fund }: { fund: Fund }) {
@@ -43,10 +49,10 @@ function FundDetail({ fund }: { fund: Fund }) {
 
   return (
     <>
-      <Link href="/funds" className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink">
+      <Link href="/funds" className="enter mb-6 inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink">
         <ArrowLeft size={16} aria-hidden /> All funds
       </Link>
-      <div className="flex flex-col gap-4 pb-8 sm:flex-row sm:items-center">
+      <div className="enter flex flex-col gap-4 pb-8 sm:flex-row sm:items-center" style={enter(1)}>
         <FundMark symbol={fund.metadata.symbol} image={fund.metadata.image} size={56} />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-3">
@@ -59,7 +65,7 @@ function FundDetail({ fund }: { fund: Fund }) {
         </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_24rem]">
+      <div className="enter grid gap-8 lg:grid-cols-[1fr_24rem]" style={enter(2)}>
         <div className="flex flex-col gap-8">
           <Panel className="p-5 sm:p-6">
             <dl className="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3">
@@ -169,9 +175,11 @@ function RecentActivity({ mint }: { mint: Address }) {
         </div>
       ) : (
         <ul className="divide-y divide-line">
-          {events.data.slice(0, 5).map((e) => (
-            <EventRow key={`${e.signature}-${e.kind}`} event={e} compact />
-          ))}
+          <AnimatePresence initial={false}>
+            {events.data.slice(0, 5).map((e, i) => (
+              <EventRow key={`${e.signature}-${e.kind}`} event={e} index={i} compact />
+            ))}
+          </AnimatePresence>
         </ul>
       )}
     </section>

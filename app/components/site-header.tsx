@@ -1,10 +1,12 @@
 "use client";
 
 import { Info, List, X } from "@phosphor-icons/react";
+import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
 import { accrue } from "@/lib/accrue";
+import { duration, ease, snappy } from "./motion";
 import { ThemeToggle } from "./theme-toggle";
 import { cx } from "./ui";
 import { WalletButton } from "./wallet-button";
@@ -20,11 +22,28 @@ const NAV = [
 export function Logo() {
   return (
     <Link href="/" className="inline-flex items-center gap-2 rounded-control font-semibold tracking-tight text-ink">
-      <span aria-hidden className="inline-flex size-7 items-center justify-center rounded-[8px] bg-primary text-sm text-on-primary">
-        A
-      </span>
+      <LogoMark />
       Accrue
     </Link>
+  );
+}
+
+/** Brand mark: income rising over the fund. Forest square, amber half-disc, same in both themes. */
+export function LogoMark({ size = 28 }: { size?: number }) {
+  return (
+    <svg aria-hidden width={size} height={size} viewBox="0 0 28 28" className="shrink-0">
+      <defs>
+        <clipPath id="accrue-mark">
+          <rect width="28" height="28" rx="8" />
+        </clipPath>
+      </defs>
+      <g clipPath="url(#accrue-mark)">
+        <rect width="28" height="28" fill="var(--panel)" />
+        <circle cx="14" cy="27" r="10" fill="var(--panel-income)" />
+        <rect x="5" y="27" width="18" height="1" fill="var(--panel)" />
+      </g>
+      <rect x="0.5" y="0.5" width="27" height="27" rx="7.5" fill="none" stroke="var(--panel-line)" />
+    </svg>
   );
 }
 
@@ -67,7 +86,7 @@ function NavList({ mobile, pathname, onNavigate }: { mobile?: boolean; pathname:
   const active = (href: string) => !!pathname && (pathname === href || pathname.startsWith(`${href}/`));
   if (mobile) {
     return (
-      <ul id="mobile-nav" className="mx-auto flex max-w-7xl flex-col gap-1 border-t border-line px-4 py-3 sm:px-6 lg:hidden">
+      <ul id="mobile-nav" className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-3 sm:px-6">
         {NAV.map((n) => (
           <li key={n.href}>
             <Link
@@ -90,9 +109,15 @@ function NavList({ mobile, pathname, onNavigate }: { mobile?: boolean; pathname:
           <Link
             href={n.href}
             aria-current={active(n.href) ? "page" : undefined}
-            className={cx("rounded-control px-3 py-2 text-[15px] hover:bg-sunk", active(n.href) ? "font-medium text-ink" : "text-muted")}
+            className={cx(
+              "relative rounded-control px-3 py-2 text-[15px] transition-colors hover:bg-sunk",
+              active(n.href) ? "font-medium text-ink" : "text-muted hover:text-ink",
+            )}
           >
             {n.label}
+            {active(n.href) ? (
+              <motion.span layoutId="nav-active" aria-hidden className="absolute inset-x-3 -bottom-px h-0.5 rounded-full bg-accent" transition={snappy} />
+            ) : null}
           </Link>
         </li>
       ))}
@@ -113,7 +138,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-30 bg-bg/95 backdrop-blur-sm">
       <NetworkBanner />
-      <div className="border-b border-line">
+      <div className="relative border-b border-line">
         <nav aria-label="Main" className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-6">
           <Logo />
           <NavLinks />
@@ -128,11 +153,35 @@ export function SiteHeader() {
               aria-label={open ? "Close menu" : "Open menu"}
               className="press inline-flex size-10 items-center justify-center rounded-control hover:bg-sunk lg:hidden"
             >
-              {open ? <X size={20} /> : <List size={20} />}
+              <AnimatePresence mode="popLayout" initial={false}>
+                <motion.span
+                  key={open ? "x" : "list"}
+                  className="inline-flex"
+                  initial={{ opacity: 0, rotate: -45 }}
+                  animate={{ opacity: 1, rotate: 0 }}
+                  exit={{ opacity: 0, rotate: 45 }}
+                  transition={{ duration: duration.fast, ease }}
+                >
+                  {open ? <X size={20} /> : <List size={20} />}
+                </motion.span>
+              </AnimatePresence>
             </button>
           </div>
         </nav>
-        {open ? <NavLinks mobile onNavigate={() => setOpen(false)} /> : null}
+        <AnimatePresence>
+          {open ? (
+            <motion.div
+              key="mobile-nav"
+              className="absolute inset-x-0 top-full border-b border-line bg-bg shadow-[0_24px_40px_-28px_var(--lift)] lg:hidden"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: duration.fast, ease }}
+            >
+              <NavLinks mobile onNavigate={() => setOpen(false)} />
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </div>
     </header>
   );
@@ -142,7 +191,7 @@ export function SiteFooter() {
   return (
     <footer className={cx("mt-auto border-t border-line", accrue.demo && "pb-16")}>
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <p>Accrue is a Solana School cohort project. Devnet only; not investment advice.</p>
+        <p>Runs on Solana devnet with test USDC. Not investment advice.</p>
         <div className="flex gap-4">
           <Link href="/funds" className="hover:text-ink">
             Funds

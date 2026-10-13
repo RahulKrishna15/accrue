@@ -1,7 +1,9 @@
 "use client";
 
 import { ArrowRight } from "@phosphor-icons/react";
+import { motion } from "motion/react";
 import { useId, useMemo, useState } from "react";
+import { spring } from "@/components/motion";
 import { cx } from "@/components/ui";
 import { FAIR_SPLIT_DEPOSIT, FAIR_SPLIT_TRANSFERS, fairSplitTimeline, type SplitHolder } from "@/lib/accrue/examples";
 import { formatUnits } from "@/lib/accrue/format";
@@ -47,18 +49,30 @@ export function FairSplit() {
       </div>
 
       <div className="mt-6 flex flex-col gap-5">
-        {HOLDERS.map((h) => (
+        {HOLDERS.map((h, hi) => (
           <div key={h} className="grid grid-cols-[4.5rem_1fr] items-center gap-x-4 gap-y-2 md:grid-cols-[6rem_1fr_9rem]">
             <p className="font-medium text-ink">{h}</p>
             <div className="relative h-9 overflow-hidden rounded-[8px] bg-sunk" aria-hidden>
-              {segments[h].map(([a, b, t]) =>
+              {/* Holding periods draw in left to right, holder by holder, to read as a timeline. */}
+              {segments[h].map(([a, b, t], si) =>
                 t > 0 ? (
-                  <div
-                    key={a}
-                    className="absolute inset-y-0 flex items-center border-r-2 border-surface bg-[#606c38] px-2 text-xs text-[#fefae0]"
-                    style={{ left: `${(a / 30) * 100}%`, width: `${((b - a) / 30) * 100}%` }}
-                  >
-                    <span className="num truncate">{t}</span>
+                  <div key={a} className="absolute inset-y-0" style={{ left: `${(a / 30) * 100}%`, width: `${((b - a) / 30) * 100}%` }}>
+                    <motion.div
+                      className="absolute inset-0 origin-left border-r-2 border-surface bg-[#606c38]"
+                      initial={{ scaleX: 0 }}
+                      whileInView={{ scaleX: 1 }}
+                      viewport={{ once: true, amount: 0.8 }}
+                      transition={{ ...spring, delay: hi * 0.14 + si * 0.1 }}
+                    />
+                    <motion.span
+                      className="num relative flex h-full items-center truncate px-2 text-xs text-[#fefae0]"
+                      initial={{ opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      viewport={{ once: true, amount: 0.8 }}
+                      transition={{ duration: 0.3, delay: hi * 0.14 + si * 0.1 + 0.25 }}
+                    >
+                      {t}
+                    </motion.span>
                   </div>
                 ) : null,
               )}

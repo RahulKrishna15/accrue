@@ -14,6 +14,7 @@ import {
   Vault,
   ClockCounterClockwise,
 } from "@phosphor-icons/react";
+import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { accrue } from "@/lib/accrue";
@@ -21,7 +22,8 @@ import { formatBps, formatDateTime, formatUnits, shortAddress } from "@/lib/accr
 import { useEvents, useFunds } from "@/lib/accrue/hooks";
 import type { AccrueEvent } from "@/lib/accrue/types";
 import { useWallet } from "@/lib/wallet/context";
-import { EmptyState, Skeleton, cx } from "../ui";
+import { FadeIn, spring } from "../motion";
+import { EmptyState, Select, Skeleton, cx, enter } from "../ui";
 
 const ICONS = {
   FundInitialized: Rocket,
@@ -64,13 +66,22 @@ export function describeEvent(e: AccrueEvent, me: Address | null): { title: stri
   }
 }
 
-export function EventRow({ event, compact, fundName }: { event: AccrueEvent; compact?: boolean; fundName?: string }) {
+export function EventRow({ event, compact, fundName, index = 0 }: { event: AccrueEvent; compact?: boolean; fundName?: string; index?: number }) {
   const { address } = useWallet();
   const Icon = event.kind === "PausedSet" && !event.paused ? Play : ICONS[event.kind];
   const d = describeEvent(event, address);
   const url = accrue.explorerTxUrl(event.signature);
   return (
-    <li className={cx("grid grid-cols-[2.25rem_1fr] gap-3", compact ? "py-3" : "py-4 md:grid-cols-[2.25rem_1fr_11rem_9rem] md:items-center")}>
+    // Inside AnimatePresence initial={false}: rows present on load stay put, new events slide in at the top.
+    <motion.li
+      layout="position"
+      initial={{ opacity: 0, y: -12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={spring}
+      className={cx("enter grid grid-cols-[2.25rem_1fr] gap-3", compact ? "py-3" : "py-4 md:grid-cols-[2.25rem_1fr_11rem_9rem] md:items-center")}
+      // Rows already on screen cascade in once; past the first screenful they appear together.
+      style={enter(Math.min(index, 10), 35)}
+    >
       <span className="inline-flex size-9 items-center justify-center rounded-control bg-sunk text-accent" aria-hidden>
         <Icon size={18} />
       </span>
@@ -79,7 +90,7 @@ export function EventRow({ event, compact, fundName }: { event: AccrueEvent; com
           {d.title}
           {fundName ? <span className="font-normal text-muted"> in {fundName}</span> : null}
         </p>
-        <p className="num truncate text-sm text-muted">{d.detail}</p>
+        <p className="num text-sm break-words text-muted md:truncate">{d.detail}</p>
         <p className={cx("text-xs text-muted", !compact && "md:hidden")}>{formatDateTime(event.timestamp)}</p>
       </div>
       {!compact ? (
@@ -98,7 +109,7 @@ export function EventRow({ event, compact, fundName }: { event: AccrueEvent; com
           </p>
         </>
       ) : null}
-    </li>
+    </motion.li>
   );
 }
 
@@ -127,11 +138,12 @@ export function ActivityFeed() {
           <label htmlFor="fund-filter" className="text-sm font-medium text-ink">
             Fund
           </label>
-          <select
+          <Select
             id="fund-filter"
+            size="sm"
             value={fund ?? ""}
             onChange={(e) => setParam("fund", e.target.value || null)}
-            className="h-10 rounded-control border border-line-strong bg-surface px-3 text-sm text-ink sm:w-64"
+            className="sm:w-64"
           >
             <option value="">All funds</option>
             {(funds.data ?? []).map((f) => (
@@ -139,7 +151,7 @@ export function ActivityFeed() {
                 {f.metadata.name}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <label className={cx("flex h-10 items-center gap-2 text-sm", !address && "opacity-50")}>
           <input
@@ -178,11 +190,15 @@ export function ActivityFeed() {
           }
         />
       ) : (
-        <ul className="divide-y divide-line border-t border-line">
-          {events.data.map((e) => (
-            <EventRow key={`${e.signature}-${e.kind}`} event={e} fundName={fund ? undefined : names.get(e.mint)} />
-          ))}
-        </ul>
+        <FadeIn>
+          <ul className="divide-y divide-line border-t border-line">
+            <AnimatePresence initial={false}>
+              {events.data.map((e, i) => (
+                <EventRow key={`${e.signature}-${e.kind}`} event={e} index={i} fundName={fund ? undefined : names.get(e.mint)} />
+              ))}
+            </AnimatePresence>
+          </ul>
+        </FadeIn>
       )}
     </div>
   );

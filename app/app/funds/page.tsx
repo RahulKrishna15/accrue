@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { FundsExplorer } from "@/components/app/funds-explorer";
-import { PageHeader, buttonClass } from "@/components/ui";
+import { PageHeader, enter, buttonClass } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Funds" };
 
@@ -17,7 +17,9 @@ export default function FundsPage() {
           </Link>
         }
       />
-      <FundsExplorer />
+      <div className="enter" style={enter(2)}>
+        <FundsExplorer />
+      </div>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { sharesForUsdc } from "@/lib/accrue/math";
 import type { Fund } from "@/lib/accrue/types";
 import { useWallet } from "@/lib/wallet/context";
 import { ConnectGate } from "../connect-gate";
+import { NumberTicker } from "../motion";
 import { TxStatus } from "../tx-status";
 import { Amount, Button, Field, Panel, TextInput } from "../ui";
 
@@ -122,7 +123,9 @@ function InvestForm({ fund }: { fund: Fund }) {
       <dl className="grid grid-cols-2 gap-3 rounded-control bg-sunk p-4 text-sm">
         <div>
           <dt className="text-muted">You receive</dt>
-          <dd className="num mt-0.5 text-lg text-ink">{formatUnits(shares, 2)}</dd>
+          <dd className="mt-0.5 text-lg text-ink">
+            <NumberTicker value={shares} />
+          </dd>
           <dd className="text-muted">{fund.metadata.symbol} shares</dd>
         </div>
         <div>

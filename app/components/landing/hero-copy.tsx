@@ -3,12 +3,8 @@
 import { ArrowRight } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import Link from "next/link";
+import { fadeUp as rise } from "@/components/motion";
 import { buttonClass } from "@/components/ui";
-
-const rise = {
-  hidden: { opacity: 0, y: 18 },
-  show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 100, damping: 20 } },
-};
 
 export function HeroCopy() {
   return (

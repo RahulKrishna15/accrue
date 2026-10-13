@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // macOS writes ._* metadata files beside every file on exFAT drives.
+    "**/._*",
   ]),
 ]);
 

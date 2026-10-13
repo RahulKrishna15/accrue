@@ -2,75 +2,62 @@
 
 /*
   Accrue tokens. Brand palette: olive #606C38, forest #283618, ivory #FEFAE0,
-  amber #DDA15E, burnt orange #BC6C25. Derived tints/shades stay in these hues;
-  the only added hue is one red for errors. Ratios are measured (WCAG 2.x).
+  amber #DDA15E, burnt orange #BC6C25. Light mode sits on a near-neutral paper
+  with a faint sage cast (not ivory), so forest and amber carry the colour.
+  Derived tints/shades stay in these hues; the only added hue is one red for
+  errors. Ratios are measured (WCAG 2.x).
+
+  Theme: light by default, dark under [data-theme="dark"]. The toggle always
+  writes data-theme, so there is no separate "system" mode.
 
   Roles
   - ink            main text, primary button fill
   - muted          secondary text (never on forest: use panel-muted there)
   - accent         burnt orange: the one action/accent colour. Fills, icons,
-                   focus rings, large/bold text only (3.8:1 on ivory)
+                   focus rings, large/bold text only (4.0:1 on bg)
   - accent-strong  darker burnt orange for small text and labelled buttons
-  - income         amber: income / earning only. Never text on ivory (2.1:1)
+  - income         amber: income / earning only. Never text on light bg (2.1:1)
   - panel-*        forest "earnings" surface where amber can be text (5.7:1)
 
-  Z scale (the only z-index values used): sticky header z-30, popovers z-40.
-  Dialogs use the native top layer and need none.
+  Z scale (the only z-index values used): decor layers -1 inside an isolated
+  parent, sticky header z-30, popovers and the demo panel z-40. Dialogs use the
+  native top layer and need none.
+
+  Backgrounds (components/backgrounds.tsx) mix palette tokens only:
+  - wash   hero radial wash end colour (amber into the page background)
+  - dots   hero dot grid
+  - glow   drifting hero glow
+  Each theme sets its own strength so text keeps the ratios above.
 */
 :root {
-  --bg: #fefae0; /* ivory */
-  --surface: #fffceb; /* raised ivory */
-  --sunk: #f4edc9; /* inset ivory */
-  --ink: #283618; /* forest on ivory 12.2:1 */
-  --muted: #606c38; /* olive on ivory 5.4:1, on sunk 4.8:1 */
-  --line: rgb(96 108 56 / 0.22);
-  --line-strong: #7c8656; /* input borders, 3.7:1 */
-  --primary: #283618;
-  --on-primary: #fefae0;
-  --accent: #bc6c25; /* 3.8:1: large text, icons, focus */
-  --accent-strong: #8f501a; /* 6.0:1 on ivory; ivory label on it 6.0:1 */
-  --on-accent: #fefae0;
-  --accent-soft: rgb(188 108 37 / 0.12);
+  --bg: #f6f6f0; /* paper, faint sage */
+  --surface: #fcfcf8; /* raised paper */
+  --sunk: #ebece3; /* inset sage */
+  --ink: #1f2a14; /* deep forest, 13.8:1 on bg */
+  --muted: #596150; /* 6.0:1 on bg, 5.4:1 on sunk */
+  --line: rgb(31 42 20 / 0.11);
+  --line-strong: #7f8571; /* input borders, 3.6:1 on surface */
+  --primary: #283618; /* forest */
+  --on-primary: #f6f6f0; /* 11.9:1 */
+  --accent: #b4641f; /* 4.0:1: large text, icons, focus */
+  --accent-strong: #8a4c17; /* 6.2:1 on bg; paper label on it 6.5:1 */
+  --on-accent: #fcfcf8;
+  --accent-soft: rgb(180 100 31 / 0.1);
   --income: #dda15e;
-  --income-soft: rgb(221 161 94 / 0.28);
-  --danger: #a33a2a; /* 6.3:1 on ivory */
-  --danger-soft: rgb(163 58 42 / 0.1);
+  --income-soft: rgb(221 161 94 / 0.26);
+  --danger: #a33a2a; /* 6.1:1 on bg */
+  --danger-soft: rgb(163 58 42 / 0.08);
   --panel: #283618;
   --panel-ink: #fefae0; /* 12.2:1 */
   --panel-muted: #b7be8f; /* 6.6:1 */
   --panel-income: #dda15e; /* 5.7:1 */
   --panel-line: rgb(254 250 224 / 0.14);
-  --shadow: rgb(40 54 24 / 0.08);
+  --shadow: rgb(31 42 20 / 0.06);
+  --wash: color-mix(in oklab, var(--income) 16%, var(--bg));
+  --dots: rgb(31 42 20 / 0.14);
+  --glow: rgb(221 161 94 / 0.22);
+  --lift: rgb(31 42 20 / 0.14);
   color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #1b2510;
-    --surface: #213016;
-    --sunk: #172010;
-    --ink: #fefae0; /* 15.1:1 on bg, 13.3:1 on surface */
-    --muted: #b7be8f; /* 8.2:1 on bg, 7.2:1 on surface */
-    --line: rgb(183 190 143 / 0.18);
-    --line-strong: #6f7a49; /* 3.5:1 */
-    --primary: #fefae0;
-    --on-primary: #1b2510;
-    --accent: #d27a2e; /* 5.0:1 on bg */
-    --accent-strong: #e08a3e; /* 6.0:1 on bg, 5.3:1 on surface */
-    --on-accent: #1b2510; /* 6.0:1 on accent-strong */
-    --accent-soft: rgb(224 138 62 / 0.14);
-    --income: #dda15e; /* 7.1:1 on bg */
-    --income-soft: rgb(221 161 94 / 0.22);
-    --danger: #e8836b; /* 6.0:1 on bg */
-    --danger-soft: rgb(232 131 107 / 0.12);
-    --panel: #283618;
-    --panel-ink: #fefae0;
-    --panel-muted: #b7be8f;
-    --panel-income: #dda15e;
-    --panel-line: rgb(254 250 224 / 0.12);
-    --shadow: rgb(10 14 6 / 0.4);
-    color-scheme: dark;
-  }
 }
 
 :root[data-theme="dark"] {
@@ -97,6 +84,10 @@
   --panel-income: #dda15e;
   --panel-line: rgb(254 250 224 / 0.12);
   --shadow: rgb(10 14 6 / 0.4);
+  --wash: color-mix(in oklab, var(--income) 14%, var(--bg));
+  --dots: rgb(183 190 143 / 0.16);
+  --glow: rgb(221 161 94 / 0.16);
+  --lift: rgb(10 14 6 / 0.55);
   color-scheme: dark;
 }
 
@@ -136,11 +127,15 @@ body {
   font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Amounts: monospace with tabular digits everywhere. */
+/*
+  Amounts: the UI sans with tabular figures, so columns of numbers align and
+  live counters do not jitter, without switching to a monospace face.
+  Monospace (font-mono) is kept for program identifiers in <code> only.
+*/
 .num {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1, "zero" 0;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.01em;
 }
 
 :focus-visible {
@@ -184,4 +179,113 @@ body {
 
 input[type="range"] {
   accent-color: var(--accent);
+}
+
+/* Background layers. See components/backgrounds.tsx. */
+/* Whole hero backdrop fades out at the bottom so no layer ends in a hard edge. */
+.bg-hero-fade {
+  mask-image: linear-gradient(to bottom, #000 68%, transparent);
+}
+.bg-hero-wash {
+  background: radial-gradient(125% 125% at 50% 10%, var(--bg) 40%, var(--wash) 100%);
+}
+.bg-dot-grid {
+  background-image: radial-gradient(var(--dots) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(42% 58% at 74% 46%, #000 10%, transparent 100%);
+}
+@media (max-width: 1023px) {
+  .bg-dot-grid {
+    mask-image: radial-gradient(70% 34% at 50% 78%, #000 10%, transparent 100%);
+  }
+}
+.bg-hero-glow {
+  background: radial-gradient(closest-side, var(--glow), transparent);
+  will-change: transform;
+}
+.bg-app-wash {
+  background: radial-gradient(70% 100% at 30% 0%, color-mix(in oklab, var(--wash) 60%, transparent), transparent 80%);
+}
+
+/*
+  Forest panel: amber glow from one corner, fine grain on a fixed pseudo-element.
+  clip-path clips the fixed layer to the panel, so the grain never repaints on scroll.
+  Glow stays at 20% so panel-muted keeps 4.5:1 even in the corner.
+*/
+.forest-panel {
+  background:
+    radial-gradient(70% 90% at 100% 0%, color-mix(in oklab, var(--panel-income) 20%, transparent), transparent 70%),
+    var(--panel);
+  clip-path: inset(0 round var(--radius-panel));
+  box-shadow: inset 0 0 0 1px var(--panel-line);
+}
+.forest-panel-bl {
+  background:
+    radial-gradient(70% 110% at 0% 100%, color-mix(in oklab, var(--panel-income) 20%, transparent), transparent 70%),
+    var(--panel);
+}
+.forest-panel::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.09;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .98 0 0 0 0 .88 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* Hover lift with a shadow tinted to the page, used on fund cards. */
+.lift {
+  transition:
+    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.2s;
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .lift:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 36px -20px var(--lift);
+  }
+}
+
+/*
+  Entrance: content rises 10px and fades in once when it mounts. CSS rather than
+  Motion so it runs on the server-rendered first paint, before hydration, and
+  replays on every route change because app/template.tsx remounts the page.
+  --enter-i orders siblings (header, then description, then content); --enter-step
+  sets the gap. Fill mode is backwards only, so once finished it never pins
+  transform/opacity and Motion layout animations on the same element still work.
+*/
+@media (prefers-reduced-motion: no-preference) {
+  .enter {
+    animation: enter 0.6s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    animation-delay: calc(var(--enter-i, 0) * var(--enter-step, 70ms));
+  }
+}
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+/* Native dialogs scale in; the backdrop fades. */
+@media (prefers-reduced-motion: no-preference) {
+  dialog[open] {
+    animation: dialog-in 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  dialog[open]::backdrop {
+    animation: backdrop-in 0.22s ease-out;
+  }
+}
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+}
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
 }

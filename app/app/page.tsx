@@ -1,9 +1,10 @@
 import { ArrowRight, ArrowsLeftRight, CurrencyCircleDollar, HandCoins, Vault } from "@phosphor-icons/react/ssr";
 import Link from "next/link";
+import { ForestPanel, HeroBackdrop } from "@/components/backgrounds";
 import { FairSplit } from "@/components/landing/fair-split";
 import { HeroEarnings } from "@/components/landing/hero-earnings";
 import { HeroCopy } from "@/components/landing/hero-copy";
-import { Reveal } from "@/components/landing/reveal";
+import { FadeUp as Reveal, GrowLine, ScrollLine } from "@/components/motion";
 import { buttonClass } from "@/components/ui";
 
 const STEPS = [
@@ -22,7 +23,7 @@ const STEPS = [
   {
     icon: ArrowsLeftRight,
     title: "Transfer",
-    ix: "execute (Transfer Hook)",
+    ix: "execute",
     body: "Token-2022 calls the hook on every transfer. It settles sender and receiver at their old balances, so nobody gains or loses income.",
   },
   {
@@ -52,13 +53,16 @@ export default function Home() {
   return (
     <>
       {/* Hero */}
-      <section className="mx-auto grid w-full max-w-7xl items-center gap-10 px-4 pt-12 pb-16 sm:px-6 md:pt-20 lg:min-h-[calc(100dvh-7.5rem)] lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pt-16">
-        <HeroCopy />
-        <HeroEarnings />
+      <section className="relative isolate overflow-hidden">
+        <HeroBackdrop />
+        <div className="mx-auto grid w-full max-w-7xl items-center gap-12 px-4 pt-12 pb-20 sm:px-6 md:pt-16 lg:grid-cols-[1.1fr_1fr] lg:gap-16 lg:pt-20 lg:pb-28">
+          <HeroCopy />
+          <HeroEarnings />
+        </div>
       </section>
 
       {/* Fair split */}
-      <section id="fair-split" className="scroll-mt-28 border-t border-line">
+      <section id="fair-split" className="scroll-mt-28">
         <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 md:py-24">
           <Reveal className="max-w-[60ch]">
             <h2 className="text-3xl font-semibold tracking-tight text-ink md:text-4xl">Paid for the days you held</h2>
@@ -72,29 +76,41 @@ export default function Home() {
         </div>
       </section>
 
-      {/* How it works: vertical steps */}
+      {/* How it works: vertical steps on mobile, a horizontal rail on desktop */}
       <section className="border-t border-line bg-sunk">
-        <div className="mx-auto grid w-full max-w-7xl gap-10 px-4 py-16 sm:px-6 md:py-24 lg:grid-cols-[0.8fr_1.2fr]">
-          <Reveal>
-            <h2 className="text-3xl font-semibold tracking-tight text-ink md:text-4xl lg:sticky lg:top-36">
-              Four instructions, one hook
-            </h2>
+        <div className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 md:py-24">
+          <Reveal className="max-w-[60ch]">
+            <h2 className="text-3xl font-semibold tracking-tight text-ink md:text-4xl">Four instructions, one hook</h2>
+            <p className="mt-3 leading-relaxed text-muted">
+              Each step is a single program instruction. The Transfer Hook keeps income fair whenever shares move.
+            </p>
           </Reveal>
-          <ol className="flex flex-col gap-8">
-            {STEPS.map((s, i) => (
-              <Reveal key={s.title} as="li" delay={i * 0.05} className="grid grid-cols-[2.5rem_1fr] gap-4">
-                  <span className="inline-flex size-10 items-center justify-center rounded-control bg-surface text-accent">
+          <ScrollLine className="mt-12 lg:mt-16" lineClassName="top-5 bottom-5 left-5 lg:hidden">
+            <ol className="flex flex-col gap-10 lg:grid lg:grid-cols-4 lg:gap-8">
+              {STEPS.map((s, i) => (
+                <Reveal
+                  key={s.title}
+                  as="li"
+                  delay={i * 0.06}
+                  className="relative grid grid-cols-[2.5rem_1fr] gap-4 lg:grid-cols-1 lg:content-start lg:gap-6"
+                >
+                  <span className="relative inline-flex size-10 items-center justify-center rounded-control border border-line bg-surface text-accent">
                     <s.icon size={22} aria-hidden />
                   </span>
+                  {i < STEPS.length - 1 ? (
+                    <GrowLine delay={0.2 + i * 0.12} className="top-5 left-[3.25rem] -right-5 hidden lg:block" />
+                  ) : null}
                   <div>
                     <h3 className="text-lg font-semibold text-ink">
-                      {s.title} <code className="num ml-1 text-sm font-normal text-muted">{s.ix}</code>
+                      {s.title}
+                      <code className="ml-2 font-mono text-sm font-normal text-muted lg:mt-1 lg:ml-0 lg:block">{s.ix}</code>
                     </h3>
-                    <p className="mt-1 max-w-[60ch] leading-relaxed text-muted">{s.body}</p>
+                    <p className="mt-2 max-w-[60ch] leading-relaxed text-muted lg:mt-3 lg:text-[15px]">{s.body}</p>
                   </div>
-              </Reveal>
-            ))}
-          </ol>
+                </Reveal>
+              ))}
+            </ol>
+          </ScrollLine>
         </div>
       </section>
 
@@ -107,9 +123,9 @@ export default function Home() {
               Most yield on Solana is reinvested into what you hold. Accrue pays it out, like a monthly-payout deposit.
             </p>
           </Reveal>
-          <div className="mt-10 grid gap-4 md:grid-cols-2">
-            <Reveal className="md:row-span-3">
-              <div className="flex h-full flex-col rounded-panel bg-panel p-6 text-panel-ink md:p-8">
+          <div className="mt-10 grid gap-8 md:grid-cols-[1.05fr_1fr] md:gap-12">
+            <Reveal className="rounded-panel shadow-[0_30px_60px_-34px_var(--lift)]">
+              <ForestPanel className="flex h-full flex-col p-6 md:p-8">
                 <p className="text-2xl font-semibold">Accrue</p>
                 <dl className="mt-6 grid gap-5">
                   <div>
@@ -128,37 +144,35 @@ export default function Home() {
                 <p className="mt-auto pt-8 text-sm text-panel-muted">
                   Built for income funds priced near their real value, such as private credit.
                 </p>
-              </div>
+              </ForestPanel>
             </Reveal>
-            {OTHERS.map((o, i) => (
-              <Reveal key={o.name} delay={0.05 * (i + 1)}>
-                <div className="rounded-panel border border-line bg-surface p-6">
+            <ul className="flex flex-col divide-y divide-line self-center">
+              {OTHERS.map((o, i) => (
+                <Reveal key={o.name} as="li" delay={0.05 * (i + 1)} className="py-6 first:pt-0 last:pb-0">
                   <p className="font-semibold text-ink">{o.name}</p>
-                  <p className="mt-2 leading-relaxed text-muted">{o.how}</p>
-                </div>
-              </Reveal>
-            ))}
+                  <p className="mt-2 max-w-[52ch] leading-relaxed text-muted">{o.how}</p>
+                </Reveal>
+              ))}
+            </ul>
           </div>
         </div>
       </section>
 
-      {/* Closing */}
-      <section className="border-t border-line">
-        <div className="mx-auto flex w-full max-w-7xl flex-col items-start gap-6 px-4 py-16 sm:px-6 md:flex-row md:items-center md:justify-between md:py-20">
-          <Reveal>
-            <h2 className="max-w-[24ch] text-3xl font-semibold tracking-tight text-ink md:text-4xl">
-              See it with sample funds on devnet
-            </h2>
-          </Reveal>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/funds" className={buttonClass("accent", "lg")}>
-              Explore funds <ArrowRight size={18} aria-hidden />
-            </Link>
-            <Link href="/funds/new" className={buttonClass("secondary", "lg")}>
-              Create a fund
-            </Link>
-          </div>
-        </div>
+      {/* Closing: forest band */}
+      <section className="mx-auto w-full max-w-7xl px-4 pb-16 sm:px-6 md:pb-24">
+        <Reveal>
+          <ForestPanel glow="bottom-left" className="grid gap-8 px-6 py-12 sm:px-10 md:grid-cols-[1fr_auto] md:items-end md:py-16">
+            <h2 className="max-w-[22ch] text-3xl font-semibold tracking-tight text-balance md:text-4xl">See it with sample funds on devnet</h2>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/funds" className={buttonClass("panel", "lg")}>
+                Explore funds <ArrowRight size={18} aria-hidden />
+              </Link>
+              <Link href="/funds/new" className={buttonClass("panelGhost", "lg")}>
+                Create a fund
+              </Link>
+            </div>
+          </ForestPanel>
+        </Reveal>
       </section>
     </>
   );

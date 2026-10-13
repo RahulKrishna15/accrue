@@ -18,27 +18,33 @@ type Props = {
   className?: string;
   /** Replaces the stream end date (for samples on a relative clock). */
   streamEndLabel?: string;
+  /** Deeper tinted shadow for the landing hero. */
+  elevated?: boolean;
 };
 
 /** Forest panel showing a position's claimable income live. Amber is used for income only. */
-export function EarningsCard({ title, subtitle, fund, holder, balance, now, action, className, streamEndLabel }: Props) {
+export function EarningsCard({ title, subtitle, fund, holder, balance, now, action, className, streamEndLabel, elevated }: Props) {
   const nowSec = BigInt(Math.floor(now() / 1000));
   const perDay = holderDailyRate(fund, balance, nowSec);
   const progress = streamProgress(fund, nowSec);
   const streaming = perDay > 0n;
 
+  // The forest surface clips its grain, so the tinted shadow lives on this wrapper.
   return (
-    <section
-      aria-label={`${title} earnings`}
-      className={cx("rounded-panel bg-panel p-5 text-panel-ink shadow-[0_24px_60px_-28px_var(--shadow)] sm:p-6", className)}
+    <div
+      className={cx(
+        "flex flex-col rounded-panel",
+        elevated ? "shadow-[0_50px_100px_-40px_var(--lift),0_18px_36px_-24px_var(--lift)]" : "shadow-[0_24px_60px_-28px_var(--shadow)]",
+        className,
+      )}
     >
+    <section aria-label={`${title} earnings`} className="forest-panel relative isolate flex flex-1 flex-col rounded-panel p-5 text-panel-ink sm:p-6">
       <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="truncate font-medium">{title}</p>
-          {subtitle ? <p className="mt-0.5 truncate text-sm text-panel-muted">{subtitle}</p> : null}
-        </div>
+        <p className="min-w-0 font-medium text-pretty">{title}</p>
         <span className="shrink-0 text-sm text-panel-muted">{streaming ? "Earning now" : "Not streaming"}</span>
       </div>
+      {/* Full width under the title row, so status lines fit on one line in narrow cards. */}
+      {subtitle ? <p className="mt-0.5 text-sm text-pretty text-panel-muted">{subtitle}</p> : null}
 
       <p className="mt-6 text-sm text-panel-muted">Claimable income</p>
       <LiveAmount
@@ -78,7 +84,9 @@ export function EarningsCard({ title, subtitle, fund, holder, balance, now, acti
         </div>
       ) : null}
 
-      {action ? <div className="mt-6">{action}</div> : null}
+      {/* mt-auto keeps actions on one line across cards of different heights. */}
+      {action ? <div className="mt-auto pt-6">{action}</div> : null}
     </section>
+    </div>
   );
 }

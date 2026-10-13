@@ -1,6 +1,7 @@
 "use client";
 
 import { ArrowSquareOut, Buildings, LockSimple, Pause, Play, WarningCircle } from "@phosphor-icons/react";
+import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { accrue } from "@/lib/accrue";
@@ -16,8 +17,9 @@ import { accrue as accrueStream, splitFee } from "@/lib/accrue/math";
 import type { Fund } from "@/lib/accrue/types";
 import { useWallet } from "@/lib/wallet/context";
 import { ConnectGate } from "../connect-gate";
+import { FadeIn, duration, ease, snappy, spring } from "../motion";
 import { TxStatus } from "../tx-status";
-import { Amount, Button, EmptyState, Field, FundMark, Panel, Skeleton, Stat, StatusBadge, TextInput, buttonClass, cx } from "../ui";
+import { Amount, Button, EmptyState, Field, FundMark, Panel, Select, Skeleton, Stat, StatusBadge, TextInput, buttonClass, cx, enter } from "../ui";
 
 export function ManageView() {
   return (
@@ -71,18 +73,13 @@ function Manage() {
             <label htmlFor="fund-pick" className="text-sm font-medium text-ink">
               Fund
             </label>
-            <select
-              id="fund-pick"
-              value={fund.mint}
-              onChange={(e) => setSelected(e.target.value)}
-              className="mt-2 h-11 w-full rounded-control border border-line-strong bg-surface px-3 text-ink"
-            >
+            <Select id="fund-pick" value={fund.mint} onChange={(e) => setSelected(e.target.value)} className="mt-2">
               {mine.map((f) => (
                 <option key={f.mint} value={f.mint}>
                   {f.metadata.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
           <div role="tablist" aria-label="Your funds" className="hidden w-fit gap-1 rounded-control bg-sunk p-1 sm:flex">
             {mine.map((f) => (
@@ -92,9 +89,12 @@ function Manage() {
                 type="button"
                 aria-selected={f.mint === fund.mint}
                 onClick={() => setSelected(f.mint)}
-                className={cx("h-9 rounded-[8px] px-3 text-sm", f.mint === fund.mint ? "bg-surface font-medium text-ink" : "text-muted hover:text-ink")}
+                className={cx("relative h-9 rounded-[8px] px-3 text-sm transition-colors", f.mint === fund.mint ? "font-medium text-ink" : "text-muted hover:text-ink")}
               >
-                {f.metadata.symbol}
+                {f.mint === fund.mint ? (
+                  <motion.span layoutId="manage-fund" aria-hidden className="absolute inset-0 rounded-[8px] bg-surface shadow-[0_1px_2px_var(--shadow)]" transition={snappy} />
+                ) : null}
+                <span className="relative">{f.metadata.symbol}</span>
               </button>
             ))}
           </div>
@@ -108,8 +108,8 @@ function Manage() {
 function ManagedFund({ fund }: { fund: Fund }) {
   const unclaimed = fund.totalIncome - fund.totalClaimed;
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center gap-3">
+    <FadeIn className="flex flex-col gap-6">
+      <div className="enter flex flex-wrap items-center gap-3">
         <FundMark symbol={fund.metadata.symbol} image={fund.metadata.image} size={44} />
         <h2 className="text-2xl font-semibold tracking-tight text-ink">{fund.metadata.name}</h2>
         <StatusBadge paused={fund.paused} closed={fund.closed} />
@@ -118,7 +118,7 @@ function ManagedFund({ fund }: { fund: Fund }) {
         </Link>
       </div>
 
-      <Panel className="p-5 sm:p-6">
+      <Panel className="enter p-5 sm:p-6" style={enter(1)}>
         <dl className="grid grid-cols-2 gap-6 md:grid-cols-4">
           <Stat label="Raised">
             <Amount value={fund.totalRaised} decimals={0} />
@@ -135,15 +135,18 @@ function ManagedFund({ fund }: { fund: Fund }) {
         </dl>
       </Panel>
 
-      <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
-        <DepositIncome fund={fund} />
+      <div className="enter grid gap-6 lg:grid-cols-[1.3fr_1fr]" style={enter(2)}>
+        {/* The main action stays in view while the other controls scroll past. */}
+        <div className="lg:sticky lg:top-36 lg:self-start">
+          <DepositIncome fund={fund} />
+        </div>
         <div className="flex flex-col gap-6">
           <SetPrice fund={fund} />
           <PauseControl fund={fund} />
           <CloseFund fund={fund} />
         </div>
       </div>
-    </div>
+    </FadeIn>
   );
 }
 
@@ -226,10 +229,11 @@ function DepositIncome({ fund }: { fund: Fund }) {
 
           <div className="rounded-control bg-sunk p-4">
             <p className="text-sm font-medium text-ink">Fee split</p>
+            <FeeSplitBar fee={fee} net={net} leftover={leftover} />
             <dl className="mt-3 flex flex-col gap-2 text-sm">
-              <Row label={`Management fee (${formatBps(fund.feeBps)}) to treasury`} value={fee} />
-              <Row label="Net to income vault" value={net} strong />
-              {leftover > 0n ? <Row label="Still streaming from the last deposit" value={leftover} /> : null}
+              <Row label={`Management fee (${formatBps(fund.feeBps)}) to treasury`} value={fee} swatch="bg-muted" />
+              <Row label="Net to income vault" value={net} strong swatch="bg-income" />
+              {leftover > 0n ? <Row label="Still streaming from the last deposit" value={leftover} swatch="bg-income-soft" /> : null}
             </dl>
             <p className="mt-3 border-t border-line pt-3 text-sm text-muted">
               {streamed > 0n ? (
@@ -253,10 +257,30 @@ function DepositIncome({ fund }: { fund: Fund }) {
   );
 }
 
-function Row({ label, value, strong }: { label: string; value: bigint; strong?: boolean }) {
+/**
+ * Gross deposit plus what is still streaming, split into fee, net and carry-over.
+ * Three stacked layers scale from the left (transform only), so typing an amount
+ * grows the split instead of redrawing it.
+ */
+function FeeSplitBar({ fee, net, leftover }: { fee: bigint; net: bigint; leftover: bigint }) {
+  const whole = fee + net + leftover;
+  const frac = (v: bigint) => (whole > 0n ? Number((v * 10_000n) / whole) / 10_000 : 0);
+  return (
+    <div className="relative mt-3 h-2 overflow-hidden rounded-full bg-line" aria-hidden>
+      <motion.div className="absolute inset-0 origin-left bg-income-soft" initial={false} animate={{ scaleX: whole > 0n ? 1 : 0 }} transition={spring} />
+      <motion.div className="absolute inset-0 origin-left bg-income" initial={false} animate={{ scaleX: frac(fee + net) }} transition={spring} />
+      <motion.div className="absolute inset-0 origin-left bg-muted" initial={false} animate={{ scaleX: frac(fee) }} transition={spring} />
+    </div>
+  );
+}
+
+function Row({ label, value, strong, swatch }: { label: string; value: bigint; strong?: boolean; swatch?: string }) {
   return (
     <div className="flex justify-between gap-4">
-      <dt className="text-muted">{label}</dt>
+      <dt className="flex items-baseline gap-2 text-muted">
+        {swatch ? <span aria-hidden className={cx("inline-block size-2 shrink-0 translate-y-[-1px] rounded-[2px]", swatch)} /> : null}
+        {label}
+      </dt>
       <dd className={cx("shrink-0", strong ? "font-medium text-ink" : "text-ink")}>
         <Amount value={value} />
       </dd>
@@ -319,8 +343,24 @@ function PauseControl({ fund }: { fund: Fund }) {
   const tx = useTransaction();
   const [target, setTarget] = useState(!fund.paused);
   return (
-    <Panel className="p-5 sm:p-6">
-      <h3 className="text-lg font-semibold text-ink">{fund.paused ? "Fund is paused" : "Pause"}</h3>
+    <div
+      className={cx(
+        "rounded-panel border p-5 transition-colors duration-300 sm:p-6",
+        fund.paused ? "border-accent bg-accent-soft" : "border-line bg-surface",
+      )}
+    >
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.h3
+          key={fund.paused ? "paused" : "live"}
+          className="text-lg font-semibold text-ink"
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: duration.fast, ease }}
+        >
+          {fund.paused ? "Fund is paused" : "Pause"}
+        </motion.h3>
+      </AnimatePresence>
       <p className="mt-1 text-sm text-muted">
         Pausing blocks investing, income deposits and share transfers. Holders can always claim what they have earned.
       </p>
@@ -334,11 +374,22 @@ function PauseControl({ fund }: { fund: Fund }) {
           tx.run(address, [getSetPausedInstruction({ manager: address, mint: fund.mint, paused: !fund.paused })]);
         }}
       >
-        {fund.paused ? <Play size={18} aria-hidden /> : <Pause size={18} aria-hidden />}
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.span
+            key={fund.paused ? "play" : "pause"}
+            className="inline-flex"
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5 }}
+            transition={spring}
+          >
+            {fund.paused ? <Play size={18} aria-hidden /> : <Pause size={18} aria-hidden />}
+          </motion.span>
+        </AnimatePresence>
         {tx.busy ? "Updating" : fund.paused ? "Resume fund" : "Pause fund"}
       </Button>
       <TxStatus className="mt-3" state={tx.state} success={target ? "Fund paused. Claims still work." : "Fund resumed."} />
-    </Panel>
+    </div>
   );
 }
 
@@ -359,12 +410,17 @@ function CloseFund({ fund }: { fund: Fund }) {
 
   if (fund.closed) {
     return (
-      <Panel className="p-5 sm:p-6">
-        <h3 className="flex items-center gap-2 text-lg font-semibold text-ink">
-          <LockSimple size={20} className="text-accent" aria-hidden /> Closed to new investment
-        </h3>
-        <p className="mt-1 text-sm text-muted">Closing is permanent. You can keep depositing income and holders keep claiming.</p>
-      </Panel>
+      <FadeIn>
+        <Panel className="p-5 sm:p-6">
+          <h3 className="flex items-center gap-2 text-lg font-semibold text-ink">
+            <motion.span className="inline-flex" initial={{ scale: 0.5, rotate: -20 }} animate={{ scale: 1, rotate: 0 }} transition={spring}>
+              <LockSimple size={20} className="text-accent" aria-hidden />
+            </motion.span>
+            Closed to new investment
+          </h3>
+          <p className="mt-1 text-sm text-muted">Closing is permanent. You can keep depositing income and holders keep claiming.</p>
+        </Panel>
+      </FadeIn>
     );
   }
 

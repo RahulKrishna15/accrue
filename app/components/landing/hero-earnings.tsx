@@ -3,6 +3,7 @@
 import { motion } from "motion/react";
 import { useState } from "react";
 import { EarningsCard } from "@/components/earnings-card";
+import { spring } from "@/components/motion";
 import { SAMPLE_ELAPSED_MS, samplePosition } from "@/lib/accrue/examples";
 
 const sample = samplePosition();
@@ -16,7 +17,7 @@ export function HeroEarnings() {
     <motion.div
       initial={{ opacity: 0, y: 28 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.15 }}
+      transition={{ ...spring, delay: 0.24 }}
     >
       <EarningsCard
         title="Meridian Trade Credit"
@@ -26,6 +27,7 @@ export function HeroEarnings() {
         balance={sample.balance}
         now={clock}
         streamEndLabel="19 days left"
+        elevated
       />
     </motion.div>
   );

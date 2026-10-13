@@ -26,7 +26,7 @@ export function DemoControls() {
   const days = Math.floor(state.clockOffsetMs / DAY);
 
   return (
-    <div ref={ref} className="fixed bottom-4 left-4 z-40">
+    <div ref={ref} className="fixed right-4 bottom-4 z-40 flex flex-col items-end">
       {open ? (
         <div
           role="region"

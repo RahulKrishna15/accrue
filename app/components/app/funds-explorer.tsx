@@ -1,6 +1,7 @@
 "use client";
 
 import { MagnifyingGlass, Plus, WarningCircle } from "@phosphor-icons/react";
+import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { accrue } from "@/lib/accrue";
@@ -8,7 +9,17 @@ import { formatBps, formatDuration, formatUnits } from "@/lib/accrue/format";
 import { useFunds } from "@/lib/accrue/hooks";
 import { fundDailyRate } from "@/lib/accrue/math";
 import type { Fund } from "@/lib/accrue/types";
+import { FadeIn, duration, snappy, spring } from "../motion";
 import { Amount, EmptyState, FundMark, Skeleton, StatusBadge, buttonClass, cx } from "../ui";
+
+// Rows enter in order on first load; on a filter change the survivors slide into place.
+const rowMotion = (i: number) =>
+  ({
+    layout: "position",
+    initial: { opacity: 0, y: 10 },
+    animate: { opacity: 1, y: 0, transition: { ...spring, delay: i * 0.05 } },
+    exit: { opacity: 0, transition: { duration: duration.fast } },
+  }) as const;
 
 type Filter = "all" | "open" | "paused" | "closed";
 const FILTERS: { id: Filter; label: string }[] = [
@@ -61,9 +72,12 @@ export function FundsExplorer() {
               role="radio"
               aria-checked={filter === f.id}
               onClick={() => setFilter(f.id)}
-              className={cx("h-8 rounded-[8px] px-3 text-sm", filter === f.id ? "bg-surface font-medium text-ink" : "text-muted hover:text-ink")}
+              className={cx("relative h-8 rounded-[8px] px-3 text-sm transition-colors", filter === f.id ? "font-medium text-ink" : "text-muted hover:text-ink")}
             >
-              {f.label}
+              {filter === f.id ? (
+                <motion.span layoutId="funds-filter" aria-hidden className="absolute inset-0 rounded-[8px] bg-surface shadow-[0_1px_2px_var(--shadow)]" transition={snappy} />
+              ) : null}
+              <span className="relative">{f.label}</span>
             </button>
           ))}
         </div>
@@ -74,7 +88,7 @@ export function FundsExplorer() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search by name or symbol"
-            className="h-full w-full bg-transparent text-sm text-ink outline-none placeholder:text-muted focus-visible:outline-none"
+            className="h-full w-full bg-transparent text-sm text-ink outline-none placeholder:text-muted focus-visible:outline-none!"
           />
         </label>
       </div>
@@ -97,7 +111,7 @@ export function FundsExplorer() {
           No funds match. Clear the search or pick another status.
         </p>
       ) : (
-        <>
+        <FadeIn>
           {/* Desktop table */}
           <table className="hidden w-full border-separate border-spacing-0 text-left md:table">
             <caption className="sr-only">All funds</caption>
@@ -112,8 +126,9 @@ export function FundsExplorer() {
               </tr>
             </thead>
             <tbody>
-              {shown.map((f) => (
-                <tr key={f.mint} className="group">
+              <AnimatePresence initial={true}>
+              {shown.map((f, i) => (
+                <motion.tr key={f.mint} className="group" {...rowMotion(i)}>
                   <td className="py-4 pr-4">
                     <Link href={`/funds/${f.mint}`} className="flex items-center gap-3 rounded-control">
                       <FundMark symbol={f.metadata.symbol} image={f.metadata.image} />
@@ -136,16 +151,18 @@ export function FundsExplorer() {
                   <td className="py-4 pl-8">
                     <StatusBadge paused={f.paused} closed={f.closed} />
                   </td>
-                </tr>
+                </motion.tr>
               ))}
+              </AnimatePresence>
             </tbody>
           </table>
 
           {/* Mobile: stacked rows */}
           <ul className="flex flex-col gap-3 md:hidden">
-            {shown.map((f) => (
-              <li key={f.mint}>
-                <Link href={`/funds/${f.mint}`} className="block rounded-panel border border-line bg-surface p-4 hover:bg-sunk">
+            <AnimatePresence initial={true}>
+            {shown.map((f, i) => (
+              <motion.li key={f.mint} {...rowMotion(i)}>
+                <Link href={`/funds/${f.mint}`} className="lift block rounded-panel border border-line bg-surface p-4">
                   <div className="flex items-center gap-3">
                     <FundMark symbol={f.metadata.symbol} image={f.metadata.image} />
                     <div className="min-w-0 flex-1">
@@ -176,10 +193,11 @@ export function FundsExplorer() {
                     <CapMeter fund={f} />
                   </div>
                 </Link>
-              </li>
+              </motion.li>
             ))}
+            </AnimatePresence>
           </ul>
-        </>
+        </FadeIn>
       )}
     </div>
   );
@@ -194,7 +212,12 @@ export function CapMeter({ fund }: { fund: Fund }) {
         <Amount value={fund.sizeCap} decimals={0} className="text-muted" />
       </p>
       <div className="h-1 w-full overflow-hidden rounded-full bg-sunk" aria-hidden>
-        <div className="h-full rounded-full bg-[#606c38]" style={{ width: `${Math.min(100, pct)}%` }} />
+        <motion.div
+          className="h-full origin-left rounded-full bg-[#606c38]"
+          initial={{ scaleX: 0 }}
+          animate={{ scaleX: Math.min(100, pct) / 100 }}
+          transition={{ ...spring, delay: 0.15 }}
+        />
       </div>
       <span className="sr-only">{pct.toFixed(1)}% of cap raised</span>
     </div>
