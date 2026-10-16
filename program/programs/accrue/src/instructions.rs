@@ -1,1 +1,3 @@
-// One file per instruction, added from step 3 on.
+pub mod initialize_fund;
+
+pub use initialize_fund::*;
