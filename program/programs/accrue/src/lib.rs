@@ -39,4 +39,8 @@ pub mod accrue {
             stream_period,
         )
     }
+
+    pub fn init_extra_account_meta_list(ctx: Context<InitExtraAccountMetaList>) -> Result<()> {
+        instructions::init_extra_account_meta_list::handle_init_extra_account_meta_list(ctx)
+    }
 }

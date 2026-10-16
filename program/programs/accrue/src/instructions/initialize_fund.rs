@@ -77,7 +77,10 @@ pub fn handle_initialize_fund(
 ) -> Result<()> {
     require!(price > 0, AccrueError::InvalidPrice);
     require!(fee_bps <= MAX_FEE_BPS, AccrueError::FeeTooHigh);
-    require!(stream_period >= MIN_STREAM_PERIOD, AccrueError::InvalidPeriod);
+    require!(
+        stream_period >= MIN_STREAM_PERIOD,
+        AccrueError::InvalidPeriod
+    );
 
     let now = Clock::get()?.unix_timestamp;
     let mint_key = ctx.accounts.mint.key();
