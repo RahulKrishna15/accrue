@@ -1,6 +1,7 @@
 pub mod constants;
 pub mod error;
 pub mod instructions;
+pub mod math;
 pub mod state;
 
 use anchor_lang::prelude::*;
@@ -42,5 +43,9 @@ pub mod accrue {
 
     pub fn init_extra_account_meta_list(ctx: Context<InitExtraAccountMetaList>) -> Result<()> {
         instructions::init_extra_account_meta_list::handle_init_extra_account_meta_list(ctx)
+    }
+
+    pub fn invest(ctx: Context<Invest>, usdc_amount: u64) -> Result<()> {
+        instructions::invest::handle_invest(ctx, usdc_amount)
     }
 }

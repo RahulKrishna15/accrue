@@ -2,11 +2,11 @@
 
 use accrue::CONFIG_SEED;
 use anchor_lang::{
-    prelude::Pubkey,
+    prelude::{Clock, Pubkey},
     solana_program::{
         instruction::Instruction, program_option::COption, program_pack::Pack, system_program,
     },
-    InstructionData, ToAccountMetas,
+    AccountDeserialize, AccountSerialize, InstructionData, ToAccountMetas,
 };
 use anchor_spl::{
     associated_token::{self, get_associated_token_address_with_program_id},
@@ -162,4 +162,113 @@ pub fn initialize_fund_ix(f: &Fund, fee_bps: u16) -> Instruction {
         }
         .data(),
     }
+}
+
+pub fn holder_pda(f: &Fund, owner: &Pubkey) -> Pubkey {
+    Pubkey::find_program_address(
+        &[
+            accrue::HOLDER_SEED,
+            f.mint.pubkey().as_ref(),
+            owner.as_ref(),
+        ],
+        &accrue::ID,
+    )
+    .0
+}
+
+pub fn share_account(f: &Fund, owner: &Pubkey) -> Pubkey {
+    get_associated_token_address_with_program_id(owner, &f.mint.pubkey(), &token_2022::ID)
+}
+
+/// A fund that has run initialize_fund (2% fee, 10 USDC per share).
+pub fn initialized_fund(svm: &mut LiteSVM) -> Fund {
+    let f = new_fund(svm);
+    send(
+        svm,
+        &[initialize_fund_ix(&f, 200)],
+        &f.manager,
+        &[&f.manager, &f.mint],
+    )
+    .unwrap();
+    f
+}
+
+/// A funded investor wallet with `usdc` Test USDC. Returns (wallet, USDC account).
+pub fn new_investor(svm: &mut LiteSVM, f: &Fund, usdc: u64) -> (Keypair, Pubkey) {
+    let investor = funded_keypair(svm);
+    let usdc_account = create_usdc_account(svm, &f.usdc_mint, &investor.pubkey(), usdc);
+    (investor, usdc_account)
+}
+
+pub fn invest_ix(
+    f: &Fund,
+    investor: &Pubkey,
+    investor_usdc: &Pubkey,
+    usdc_amount: u64,
+) -> Instruction {
+    Instruction {
+        program_id: accrue::ID,
+        accounts: accrue::accounts::Invest {
+            investor: *investor,
+            config: f.config,
+            mint: f.mint.pubkey(),
+            holder: holder_pda(f, investor),
+            investor_share_account: share_account(f, investor),
+            usdc_mint: f.usdc_mint,
+            investor_usdc: *investor_usdc,
+            treasury: f.treasury,
+            token_program: token_2022::ID,
+            usdc_token_program: spl_token::ID,
+            associated_token_program: associated_token::ID,
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None),
+        data: accrue::instruction::Invest { usdc_amount }.data(),
+    }
+}
+
+pub fn invest(
+    svm: &mut LiteSVM,
+    f: &Fund,
+    investor: &Keypair,
+    investor_usdc: &Pubkey,
+    usdc_amount: u64,
+) -> TransactionResult {
+    svm.expire_blockhash();
+    send(
+        svm,
+        &[invest_ix(f, &investor.pubkey(), investor_usdc, usdc_amount)],
+        investor,
+        &[investor],
+    )
+}
+
+pub fn read<T: AccountDeserialize>(svm: &LiteSVM, address: &Pubkey) -> T {
+    let data = svm.get_account(address).unwrap().data;
+    T::try_deserialize(&mut data.as_slice()).unwrap()
+}
+
+/// Overwrites an Anchor account's data (used to fake state the program can't set yet).
+pub fn write<T: AccountSerialize>(svm: &mut LiteSVM, address: &Pubkey, value: &T) {
+    let mut account = svm.get_account(address).unwrap();
+    let mut data = Vec::new();
+    value.try_serialize(&mut data).unwrap();
+    account.data[..data.len()].copy_from_slice(&data);
+    svm.set_account(*address, account).unwrap();
+}
+
+pub fn token_balance(svm: &LiteSVM, address: &Pubkey) -> u64 {
+    // amount sits at bytes 64..72 in both SPL Token and Token-2022 accounts
+    let data = svm.get_account(address).unwrap().data;
+    u64::from_le_bytes(data[64..72].try_into().unwrap())
+}
+
+pub fn now(svm: &LiteSVM) -> i64 {
+    svm.get_sysvar::<Clock>().unix_timestamp
+}
+
+pub fn warp(svm: &mut LiteSVM, seconds: i64) {
+    let mut clock = svm.get_sysvar::<Clock>();
+    clock.unix_timestamp += seconds;
+    svm.set_sysvar(&clock);
 }

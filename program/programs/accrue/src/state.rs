@@ -4,7 +4,7 @@ use anchor_lang::prelude::*;
 /// Signs as the share mint authority and the income vault authority.
 /// Amounts are base units (6 decimals); timestamps are unix seconds.
 #[account]
-#[derive(InitSpace)]
+#[derive(InitSpace, Default)]
 pub struct Config {
     pub manager: Pubkey,
     /// Token-2022 share mint.
@@ -47,7 +47,7 @@ pub struct Config {
 /// One per (fund, wallet). Seeds: ["holder", mint, owner].
 /// The share balance lives in the token account; this only tracks income.
 #[account]
-#[derive(InitSpace)]
+#[derive(InitSpace, Default)]
 pub struct Holder {
     pub mint: Pubkey,
     pub owner: Pubkey,

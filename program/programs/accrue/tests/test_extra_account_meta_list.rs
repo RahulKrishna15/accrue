@@ -7,7 +7,6 @@ use anchor_lang::{
     InstructionData, ToAccountMetas,
 };
 use common::*;
-use litesvm::LiteSVM;
 use solana_keypair::Keypair;
 use solana_signer::Signer;
 use spl_tlv_account_resolution::state::ExtraAccountMetaList;
@@ -28,18 +27,6 @@ fn init_extra_account_meta_list_ix(f: &Fund, payer: &Keypair, list: Pubkey) -> I
         .to_account_metas(None),
         data: accrue::instruction::InitExtraAccountMetaList {}.data(),
     }
-}
-
-fn initialized_fund(svm: &mut LiteSVM) -> Fund {
-    let f = new_fund(svm);
-    send(
-        svm,
-        &[initialize_fund_ix(&f, 200)],
-        &f.manager,
-        &[&f.manager, &f.mint],
-    )
-    .unwrap();
-    f
 }
 
 #[test]
