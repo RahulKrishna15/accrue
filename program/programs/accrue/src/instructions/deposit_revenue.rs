@@ -3,7 +3,9 @@ use anchor_spl::token_interface::{
     transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked,
 };
 
-use crate::{constants::*, error::AccrueError, math::accrue, state::Config};
+use crate::{
+    constants::*, error::AccrueError, events::RevenueDeposited, math::accrue, state::Config,
+};
 
 #[derive(Accounts)]
 pub struct DepositRevenue<'info> {
@@ -98,5 +100,14 @@ pub fn handle_deposit_revenue(ctx: Context<DepositRevenue>, amount: u64) -> Resu
     if fee > 0 {
         pay(ctx.accounts.treasury.to_account_info(), fee)?;
     }
+
+    emit!(RevenueDeposited {
+        mint: ctx.accounts.mint.key(),
+        timestamp: now,
+        gross: amount,
+        fee,
+        net,
+        stream_end: ctx.accounts.config.stream_end,
+    });
     Ok(())
 }

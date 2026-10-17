@@ -8,6 +8,7 @@ use anchor_spl::token_interface::{
 use crate::{
     constants::*,
     error::AccrueError,
+    events::{HolderRegistered, Invested},
     math::{accrue, settle, shares_for_usdc},
     state::{Config, Holder},
 };
@@ -104,6 +105,11 @@ pub fn handle_invest(ctx: Context<Invest>, usdc_amount: u64) -> Result<()> {
         holder.owner = ctx.accounts.investor.key();
         holder.last_acc = acc;
         holder.bump = ctx.bumps.holder;
+        emit!(HolderRegistered {
+            mint: holder.mint,
+            timestamp: now,
+            owner: holder.owner,
+        });
     } else {
         settle(holder, ctx.accounts.investor_share_account.amount, acc)?;
     }
@@ -154,5 +160,13 @@ pub fn handle_invest(ctx: Context<Invest>, usdc_amount: u64) -> Result<()> {
         .checked_add(usdc_amount)
         .ok_or(ProgramError::ArithmeticOverflow)?;
 
+    emit!(Invested {
+        mint: mint_key,
+        timestamp: now,
+        investor: ctx.accounts.investor.key(),
+        usdc: usdc_amount,
+        shares,
+        price: ctx.accounts.config.price,
+    });
     Ok(())
 }

@@ -7,6 +7,7 @@ use anchor_spl::token_interface::{
 use crate::{
     constants::*,
     error::AccrueError,
+    events::Claimed,
     math::{accrue, settle},
     state::{Config, Holder},
 };
@@ -63,8 +64,9 @@ pub struct Claim<'info> {
 }
 
 pub fn handle_claim(ctx: Context<Claim>) -> Result<()> {
+    let now = Clock::get()?.unix_timestamp;
     let config = &mut ctx.accounts.config;
-    accrue(config, Clock::get()?.unix_timestamp)?;
+    accrue(config, now)?;
     let acc = config.acc_per_token;
 
     // pending only covers income up to the last settle; add the rest first.
@@ -101,5 +103,13 @@ pub fn handle_claim(ctx: Context<Claim>) -> Result<()> {
         ),
         amount,
         ctx.accounts.usdc_mint.decimals,
-    )
+    )?;
+
+    emit!(Claimed {
+        mint: mint_key,
+        timestamp: now,
+        owner: ctx.accounts.owner.key(),
+        amount,
+    });
+    Ok(())
 }

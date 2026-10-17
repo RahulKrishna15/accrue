@@ -6,7 +6,7 @@ use anchor_spl::token_interface::{
     token_metadata_initialize, Mint, TokenAccount, TokenInterface, TokenMetadataInitialize,
 };
 
-use crate::{constants::*, error::AccrueError, state::Config};
+use crate::{constants::*, error::AccrueError, events::FundInitialized, state::Config};
 
 #[derive(Accounts)]
 pub struct InitializeFund<'info> {
@@ -142,5 +142,12 @@ pub fn handle_initialize_fund(
         uri,
     )?;
 
+    emit!(FundInitialized {
+        mint: mint_key,
+        timestamp: now,
+        manager: ctx.accounts.manager.key(),
+        price,
+        fee_bps,
+    });
     Ok(())
 }

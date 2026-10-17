@@ -14,6 +14,7 @@ use anchor_spl::token_interface::{
 use crate::{
     constants::*,
     error::AccrueError,
+    events::Transferred,
     math::{accrue, settle},
     state::{Config, Holder},
 };
@@ -82,15 +83,25 @@ pub fn handle_execute(ctx: Context<Execute>, amount: u64) -> Result<()> {
 
     let config = &mut ctx.accounts.config;
     require!(!config.paused, AccrueError::FundPaused);
-    accrue(config, Clock::get()?.unix_timestamp)?;
+    let now = Clock::get()?.unix_timestamp;
+    accrue(config, now)?;
     let acc = config.acc_per_token;
 
     let source = &ctx.accounts.source_token;
     let destination = &ctx.accounts.destination_token;
+    let event = Transferred {
+        mint: ctx.accounts.mint.key(),
+        timestamp: now,
+        from: source.owner,
+        to: destination.owner,
+        amount,
+    };
 
     // Self-transfer: same ATA, balance unchanged, one Holder.
     if source.key() == destination.key() {
-        return settle(&mut ctx.accounts.sender_holder, source.amount, acc);
+        settle(&mut ctx.accounts.sender_holder, source.amount, acc)?;
+        emit!(event);
+        return Ok(());
     }
 
     // The hook runs after the move, so rebuild the balances income was earned on.
@@ -114,6 +125,8 @@ pub fn handle_execute(ctx: Context<Execute>, amount: u64) -> Result<()> {
     let mut receiver = Holder::try_deserialize(&mut &data[..])?;
     settle(&mut receiver, receiver_before, acc)?;
     receiver.try_serialize(&mut &mut data[..])?;
+
+    emit!(event);
     Ok(())
 }
 

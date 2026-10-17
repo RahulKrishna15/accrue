@@ -438,3 +438,45 @@ pub fn claim(
         &[owner],
     )
 }
+
+fn manage_ix(f: &Fund, signer: &Pubkey, data: Vec<u8>) -> Instruction {
+    Instruction {
+        program_id: accrue::ID,
+        accounts: accrue::accounts::ManageFund {
+            manager: *signer,
+            config: f.config,
+            mint: f.mint.pubkey(),
+        }
+        .to_account_metas(None),
+        data,
+    }
+}
+
+pub fn set_price_ix(f: &Fund, signer: &Pubkey, price: u64) -> Instruction {
+    manage_ix(f, signer, accrue::instruction::SetPrice { price }.data())
+}
+
+pub fn set_paused_ix(f: &Fund, signer: &Pubkey, paused: bool) -> Instruction {
+    manage_ix(f, signer, accrue::instruction::SetPaused { paused }.data())
+}
+
+pub fn close_fund_ix(f: &Fund, signer: &Pubkey) -> Instruction {
+    manage_ix(f, signer, accrue::instruction::CloseFund {}.data())
+}
+
+/// Sends one instruction signed by the fund manager.
+pub fn as_manager(svm: &mut LiteSVM, f: &Fund, ix: Instruction) -> TransactionResult {
+    svm.expire_blockhash();
+    send(svm, &[ix], &f.manager, &[&f.manager])
+}
+
+/// Decodes every `T` event from a transaction's "Program data:" log lines.
+pub fn events<T: anchor_lang::Event + anchor_lang::AnchorDeserialize>(logs: &[String]) -> Vec<T> {
+    use base64::Engine;
+    logs.iter()
+        .filter_map(|line| line.strip_prefix("Program data: "))
+        .filter_map(|b64| base64::engine::general_purpose::STANDARD.decode(b64).ok())
+        .filter(|bytes| bytes.starts_with(T::DISCRIMINATOR))
+        .map(|bytes| T::try_from_slice(&bytes[T::DISCRIMINATOR.len()..]).unwrap())
+        .collect()
+}

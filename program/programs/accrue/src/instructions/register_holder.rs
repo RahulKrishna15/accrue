@@ -4,6 +4,7 @@ use anchor_spl::token_interface::Mint;
 use crate::{
     constants::*,
     error::AccrueError,
+    events::HolderRegistered,
     math::accrue,
     state::{Config, Holder},
 };
@@ -48,13 +49,20 @@ pub fn handle_register_holder(ctx: Context<RegisterHolder>) -> Result<()> {
         AccrueError::HolderAlreadyRegistered
     );
 
+    let now = Clock::get()?.unix_timestamp;
     let config = &mut ctx.accounts.config;
-    accrue(config, Clock::get()?.unix_timestamp)?;
+    accrue(config, now)?;
 
     holder.mint = ctx.accounts.mint.key();
     holder.owner = ctx.accounts.owner.key();
     // Balance is 0 here, so nothing is earned either way; start at the current acc anyway.
     holder.last_acc = config.acc_per_token;
     holder.bump = ctx.bumps.holder;
+
+    emit!(HolderRegistered {
+        mint: holder.mint,
+        timestamp: now,
+        owner: holder.owner,
+    });
     Ok(())
 }

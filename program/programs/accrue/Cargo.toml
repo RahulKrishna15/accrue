@@ -34,6 +34,7 @@ solana-transaction = "4.3.0"
 solana-signer = "3.0.0"
 solana-keypair = "3.0.1"
 solana-account = "4.7.0"
+base64 = "0.23.1"
 
 
 [lints.rust]

@@ -1,5 +1,6 @@
 pub mod constants;
 pub mod error;
+pub mod events;
 pub mod instructions;
 pub mod math;
 pub mod state;
@@ -57,6 +58,18 @@ pub mod accrue {
 
     pub fn claim(ctx: Context<Claim>) -> Result<()> {
         instructions::claim::handle_claim(ctx)
+    }
+
+    pub fn set_price(ctx: Context<ManageFund>, price: u64) -> Result<()> {
+        instructions::manage_fund::handle_set_price(ctx, price)
+    }
+
+    pub fn set_paused(ctx: Context<ManageFund>, paused: bool) -> Result<()> {
+        instructions::manage_fund::handle_set_paused(ctx, paused)
+    }
+
+    pub fn close_fund(ctx: Context<ManageFund>) -> Result<()> {
+        instructions::manage_fund::handle_close_fund(ctx)
     }
 
     pub fn register_holder(ctx: Context<RegisterHolder>) -> Result<()> {
