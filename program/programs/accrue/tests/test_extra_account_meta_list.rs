@@ -1,33 +1,12 @@
 mod common;
 
 use accrue::{extra_account_metas, extra_account_metas_len};
-use anchor_lang::{
-    prelude::Pubkey,
-    solana_program::{instruction::Instruction, system_program},
-    InstructionData, ToAccountMetas,
-};
 use common::*;
-use solana_keypair::Keypair;
 use solana_signer::Signer;
 use spl_tlv_account_resolution::state::ExtraAccountMetaList;
 use spl_transfer_hook_interface::{
     get_extra_account_metas_address, instruction::ExecuteInstruction,
 };
-
-fn init_extra_account_meta_list_ix(f: &Fund, payer: &Keypair, list: Pubkey) -> Instruction {
-    Instruction {
-        program_id: accrue::ID,
-        accounts: accrue::accounts::InitExtraAccountMetaList {
-            payer: payer.pubkey(),
-            mint: f.mint.pubkey(),
-            config: f.config,
-            extra_account_meta_list: list,
-            system_program: system_program::ID,
-        }
-        .to_account_metas(None),
-        data: accrue::instruction::InitExtraAccountMetaList {}.data(),
-    }
-}
 
 #[test]
 fn init_extra_account_meta_list_writes_the_hook_recipe() {

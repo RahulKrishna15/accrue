@@ -4,7 +4,10 @@ use accrue::CONFIG_SEED;
 use anchor_lang::{
     prelude::{Clock, Pubkey},
     solana_program::{
-        instruction::Instruction, program_option::COption, program_pack::Pack, system_program,
+        instruction::{AccountMeta, Instruction},
+        program_option::COption,
+        program_pack::Pack,
+        system_program,
     },
     AccountDeserialize, AccountSerialize, InstructionData, ToAccountMetas,
 };
@@ -271,4 +274,90 @@ pub fn warp(svm: &mut LiteSVM, seconds: i64) {
     let mut clock = svm.get_sysvar::<Clock>();
     clock.unix_timestamp += seconds;
     svm.set_sysvar(&clock);
+}
+
+pub fn meta_list_pda(f: &Fund) -> Pubkey {
+    spl_transfer_hook_interface::get_extra_account_metas_address(&f.mint.pubkey(), &accrue::ID)
+}
+
+pub fn init_extra_account_meta_list_ix(f: &Fund, payer: &Keypair, list: Pubkey) -> Instruction {
+    Instruction {
+        program_id: accrue::ID,
+        accounts: accrue::accounts::InitExtraAccountMetaList {
+            payer: payer.pubkey(),
+            mint: f.mint.pubkey(),
+            config: f.config,
+            extra_account_meta_list: list,
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None),
+        data: accrue::instruction::InitExtraAccountMetaList {}.data(),
+    }
+}
+
+/// initialize_fund + init_extra_account_meta_list: shares can be transferred.
+pub fn transferable_fund(svm: &mut LiteSVM) -> Fund {
+    let f = initialized_fund(svm);
+    send(
+        svm,
+        &[init_extra_account_meta_list_ix(
+            &f,
+            &f.manager,
+            meta_list_pda(&f),
+        )],
+        &f.manager,
+        &[&f.manager],
+    )
+    .unwrap();
+    f
+}
+
+pub fn register_holder_ix(f: &Fund, payer: &Pubkey, owner: &Pubkey) -> Instruction {
+    Instruction {
+        program_id: accrue::ID,
+        accounts: accrue::accounts::RegisterHolder {
+            payer: *payer,
+            owner: *owner,
+            mint: f.mint.pubkey(),
+            config: f.config,
+            holder: holder_pda(f, owner),
+            system_program: system_program::ID,
+        }
+        .to_account_metas(None),
+        data: accrue::instruction::RegisterHolder {}.data(),
+    }
+}
+
+/// Creates `owner`'s Token-2022 share ATA (empty), as a wallet would.
+pub fn create_share_account_ix(f: &Fund, payer: &Pubkey, owner: &Pubkey) -> Instruction {
+    associated_token::spl_associated_token_account::instruction::create_associated_token_account_idempotent(
+        payer,
+        owner,
+        &f.mint.pubkey(),
+        &token_2022::ID,
+    )
+}
+
+/// transfer_checked between share ATAs, with the hook's extra accounts appended
+/// (what the client resolves from the meta list on Day 3).
+pub fn hooked_transfer_ix(f: &Fund, from: &Pubkey, to: &Pubkey, amount: u64) -> Instruction {
+    let mut ix = anchor_spl::token_interface::spl_token_2022::instruction::transfer_checked(
+        &token_2022::ID,
+        &share_account(f, from),
+        &f.mint.pubkey(),
+        &share_account(f, to),
+        from,
+        &[],
+        amount,
+        accrue::SHARE_DECIMALS,
+    )
+    .unwrap();
+    ix.accounts.extend([
+        AccountMeta::new(f.config, false),
+        AccountMeta::new(holder_pda(f, from), false),
+        AccountMeta::new(holder_pda(f, to), false),
+        AccountMeta::new_readonly(accrue::ID, false),
+        AccountMeta::new_readonly(meta_list_pda(f), false),
+    ]);
+    ix
 }

@@ -5,6 +5,8 @@ pub mod math;
 pub mod state;
 
 use anchor_lang::prelude::*;
+use spl_discriminator::SplDiscriminate;
+use spl_transfer_hook_interface::instruction::ExecuteInstruction;
 
 pub use constants::*;
 pub use instructions::*;
@@ -47,5 +49,15 @@ pub mod accrue {
 
     pub fn invest(ctx: Context<Invest>, usdc_amount: u64) -> Result<()> {
         instructions::invest::handle_invest(ctx, usdc_amount)
+    }
+
+    pub fn register_holder(ctx: Context<RegisterHolder>) -> Result<()> {
+        instructions::register_holder::handle_register_holder(ctx)
+    }
+
+    /// Transfer Hook entry point, called by Token-2022 with the SPL discriminator.
+    #[instruction(discriminator = ExecuteInstruction::SPL_DISCRIMINATOR_SLICE)]
+    pub fn execute(ctx: Context<Execute>, amount: u64) -> Result<()> {
+        instructions::execute::handle_execute(ctx, amount)
     }
 }
