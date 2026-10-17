@@ -51,6 +51,14 @@ pub mod accrue {
         instructions::invest::handle_invest(ctx, usdc_amount)
     }
 
+    pub fn deposit_revenue(ctx: Context<DepositRevenue>, amount: u64) -> Result<()> {
+        instructions::deposit_revenue::handle_deposit_revenue(ctx, amount)
+    }
+
+    pub fn claim(ctx: Context<Claim>) -> Result<()> {
+        instructions::claim::handle_claim(ctx)
+    }
+
     pub fn register_holder(ctx: Context<RegisterHolder>) -> Result<()> {
         instructions::register_holder::handle_register_holder(ctx)
     }

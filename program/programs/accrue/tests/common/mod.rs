@@ -185,10 +185,14 @@ pub fn share_account(f: &Fund, owner: &Pubkey) -> Pubkey {
 
 /// A fund that has run initialize_fund (2% fee, 10 USDC per share).
 pub fn initialized_fund(svm: &mut LiteSVM) -> Fund {
+    initialized_fund_with_fee(svm, 200)
+}
+
+pub fn initialized_fund_with_fee(svm: &mut LiteSVM, fee_bps: u16) -> Fund {
     let f = new_fund(svm);
     send(
         svm,
-        &[initialize_fund_ix(&f, 200)],
+        &[initialize_fund_ix(&f, fee_bps)],
         &f.manager,
         &[&f.manager, &f.mint],
     )
@@ -297,7 +301,11 @@ pub fn init_extra_account_meta_list_ix(f: &Fund, payer: &Keypair, list: Pubkey) 
 
 /// initialize_fund + init_extra_account_meta_list: shares can be transferred.
 pub fn transferable_fund(svm: &mut LiteSVM) -> Fund {
-    let f = initialized_fund(svm);
+    transferable_fund_with_fee(svm, 200)
+}
+
+pub fn transferable_fund_with_fee(svm: &mut LiteSVM, fee_bps: u16) -> Fund {
+    let f = initialized_fund_with_fee(svm, fee_bps);
     send(
         svm,
         &[init_extra_account_meta_list_ix(
@@ -360,4 +368,73 @@ pub fn hooked_transfer_ix(f: &Fund, from: &Pubkey, to: &Pubkey, amount: u64) -> 
         AccountMeta::new_readonly(meta_list_pda(f), false),
     ]);
     ix
+}
+
+/// A manager-owned USDC account holding `amount` (separate from the treasury).
+pub fn manager_usdc(svm: &mut LiteSVM, f: &Fund, amount: u64) -> Pubkey {
+    create_usdc_account(svm, &f.usdc_mint, &f.manager.pubkey(), amount)
+}
+
+pub fn deposit_ix(f: &Fund, signer: &Pubkey, from_usdc: &Pubkey, amount: u64) -> Instruction {
+    Instruction {
+        program_id: accrue::ID,
+        accounts: accrue::accounts::DepositRevenue {
+            manager: *signer,
+            config: f.config,
+            mint: f.mint.pubkey(),
+            usdc_mint: f.usdc_mint,
+            manager_usdc: *from_usdc,
+            vault: f.vault,
+            treasury: f.treasury,
+            usdc_token_program: spl_token::ID,
+        }
+        .to_account_metas(None),
+        data: accrue::instruction::DepositRevenue { amount }.data(),
+    }
+}
+
+pub fn deposit(svm: &mut LiteSVM, f: &Fund, from_usdc: &Pubkey, amount: u64) -> TransactionResult {
+    svm.expire_blockhash();
+    send(
+        svm,
+        &[deposit_ix(f, &f.manager.pubkey(), from_usdc, amount)],
+        &f.manager,
+        &[&f.manager],
+    )
+}
+
+pub fn claim_ix(f: &Fund, owner: &Pubkey, holder: &Pubkey, owner_usdc: &Pubkey) -> Instruction {
+    Instruction {
+        program_id: accrue::ID,
+        accounts: accrue::accounts::Claim {
+            owner: *owner,
+            config: f.config,
+            mint: f.mint.pubkey(),
+            holder: *holder,
+            owner_share_account: share_account(f, owner),
+            owner_usdc: *owner_usdc,
+            vault: f.vault,
+            usdc_mint: f.usdc_mint,
+            token_program: token_2022::ID,
+            usdc_token_program: spl_token::ID,
+        }
+        .to_account_metas(None),
+        data: accrue::instruction::Claim {}.data(),
+    }
+}
+
+pub fn claim(
+    svm: &mut LiteSVM,
+    f: &Fund,
+    owner: &Keypair,
+    owner_usdc: &Pubkey,
+) -> TransactionResult {
+    svm.expire_blockhash();
+    let holder = holder_pda(f, &owner.pubkey());
+    send(
+        svm,
+        &[claim_ix(f, &owner.pubkey(), &holder, owner_usdc)],
+        owner,
+        &[owner],
+    )
 }

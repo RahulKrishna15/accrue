@@ -64,18 +64,15 @@ fn invest_rejects_bad_amounts() {
 #[test]
 fn invest_accrues_before_minting_and_settles_existing_holders() {
     let mut svm = setup();
-    let f = initialized_fund(&mut svm);
+    let f = initialized_fund_with_fee(&mut svm, 0);
     let (alice, alice_usdc) = new_investor(&mut svm, &f, 10_000 * USDC);
     let (bob, bob_usdc) = new_investor(&mut svm, &f, 10_000 * USDC);
 
     invest(&mut svm, &f, &alice, &alice_usdc, 6_000 * USDC).unwrap(); // 600 shares
 
-    // deposit_revenue doesn't exist yet: fake a 3,000 USDC stream over 30 days.
-    let mut config: Config = read(&svm, &f.config);
-    config.stream_remaining = 3_000 * USDC;
-    config.last_update = now(&svm);
-    config.stream_end = now(&svm) + 30 * DAY;
-    write(&mut svm, &f.config, &config);
+    // 3,000 USDC streaming over 30 days (fee 0 keeps the numbers round).
+    let from = manager_usdc(&mut svm, &f, 3_000 * USDC);
+    deposit(&mut svm, &f, &from, 3_000 * USDC).unwrap();
 
     // Day 10: Bob buys 400 shares. Days 0-10 (1,000 USDC) belong to Alice's 600 alone.
     warp(&mut svm, 10 * DAY);

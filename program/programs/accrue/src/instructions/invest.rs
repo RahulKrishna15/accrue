@@ -58,9 +58,10 @@ pub struct Invest<'info> {
     )]
     pub investor_usdc: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    /// Checked against config.treasury by has_one.
+    /// CHECK: checked against config.treasury by has_one. Unchecked so a manager
+    /// can invest from the treasury itself (same writable account twice).
     #[account(mut)]
-    pub treasury: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub treasury: UncheckedAccount<'info>,
 
     pub token_program: Program<'info, Token2022>,
     pub usdc_token_program: Interface<'info, TokenInterface>,

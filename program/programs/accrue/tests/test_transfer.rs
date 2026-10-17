@@ -14,16 +14,13 @@ const DAY: i64 = 86_400;
 
 /// Transferable fund where Alice holds 600 shares and a 3,000 USDC / 30 day stream is running.
 fn fund_with_alice_and_stream(svm: &mut LiteSVM) -> (Fund, Keypair) {
-    let f = transferable_fund(svm);
+    let f = transferable_fund_with_fee(svm, 0);
     let (alice, alice_usdc) = new_investor(svm, &f, 10_000 * USDC);
     invest(svm, &f, &alice, &alice_usdc, 6_000 * USDC).unwrap();
 
-    // deposit_revenue comes on Day 2: fake the stream.
-    let mut config: Config = read(svm, &f.config);
-    config.stream_remaining = 3_000 * USDC;
-    config.last_update = now(svm);
-    config.stream_end = now(svm) + 30 * DAY;
-    write(svm, &f.config, &config);
+    // 3,000 USDC streaming over 30 days (fee 0 keeps the numbers round).
+    let from = manager_usdc(svm, &f, 3_000 * USDC);
+    deposit(svm, &f, &from, 3_000 * USDC).unwrap();
     (f, alice)
 }
 
