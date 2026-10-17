@@ -71,7 +71,8 @@ import {
   type Holder,
 } from "../generated";
 import type { AccrueInstruction } from "../instructions";
-import type { Fund, FundMetadata, HolderAccount, Position } from "../types";
+import type { AccrueEvent, Fund, FundMetadata, HolderAccount, Position } from "../types";
+import { createEventReader } from "./events";
 
 /** What the real client needs from the app's Kit client. */
 export type DevnetClientDeps = {
@@ -158,6 +159,7 @@ export function createDevnetClient({ rpc, rpcSubscriptions, getSigner }: DevnetC
   const sendAndConfirm = sendAndConfirmTransactionFactory({ rpc, rpcSubscriptions });
   /** Mint keypairs made by generateMintAddress, kept until initialize_fund signs with them. */
   const mintSigners = new Map<Address, KeyPairSigner>();
+  const eventsFor = createEventReader(rpc);
 
   async function tokenBalance(account: Address): Promise<bigint> {
     const { value } = await rpc.getAccountInfo(account, { encoding: "base64" }).send();
@@ -177,6 +179,22 @@ export function createDevnetClient({ rpc, rpcSubscriptions, getSigner }: DevnetC
     const account = await fetchMaybeConfig(rpc, config);
     if (!account.exists) return null;
     return (await fundsFor([account]))[0];
+  }
+
+  async function fetchAllFunds(): Promise<Fund[]> {
+    const accounts = await rpc
+      .getProgramAccounts(ACCRUE_PROGRAM_ADDRESS, {
+        encoding: "base64",
+        filters: [{ memcmp: { offset: 0n, bytes: base58(CONFIG_DISCRIMINATOR), encoding: "base58" } }],
+      })
+      .send();
+    const decoder = getConfigDecoder();
+    const configs = accounts.map((a) => ({
+      address: a.pubkey,
+      data: decoder.decode(getBase64Encoder().encode(a.account.data[0])),
+    }));
+    const funds = await fundsFor(configs);
+    return funds.sort((a, b) => Number(b.createdAt - a.createdAt));
   }
 
   async function requireConfig(mint: Address): Promise<Config> {
@@ -305,22 +323,7 @@ export function createDevnetClient({ rpc, rpcSubscriptions, getSigner }: DevnetC
     mode: "devnet",
     now: () => Date.now(),
 
-    async fetchAllFunds() {
-      const accounts = await rpc
-        .getProgramAccounts(ACCRUE_PROGRAM_ADDRESS, {
-          encoding: "base64",
-          filters: [{ memcmp: { offset: 0n, bytes: base58(CONFIG_DISCRIMINATOR), encoding: "base58" } }],
-        })
-        .send();
-      const decoder = getConfigDecoder();
-      const configs = accounts.map((a) => ({
-        address: a.pubkey,
-        data: decoder.decode(getBase64Encoder().encode(a.account.data[0])),
-      }));
-      const funds = await fundsFor(configs);
-      return funds.sort((a, b) => Number(b.createdAt - a.createdAt));
-    },
-
+    fetchAllFunds,
     fetchFund,
 
     async fetchHolder(mint, owner) {
@@ -358,8 +361,23 @@ export function createDevnetClient({ rpc, rpcSubscriptions, getSigner }: DevnetC
       return positions.filter((p): p is Position => !!p && (p.balance > 0n || p.holder.pending > 0n));
     },
 
-    // Activity feed from transaction logs comes in a later step.
-    fetchEvents: async () => [],
+    async fetchEvents(filter) {
+      // Every Accrue instruction touches the fund's Config, so one fund = its Config's history.
+      const source = filter?.mint ? (await findConfigPda({ mint: filter.mint }))[0] : ACCRUE_PROGRAM_ADDRESS;
+      const events = await eventsFor(source);
+      const wallet = filter?.wallet;
+      if (!wallet) return events;
+      // Same rule as the mock: the wallet took part, or it manages the fund.
+      const managed = new Set((await fetchAllFunds()).filter((f) => f.manager === wallet).map((f) => f.mint));
+      return events.filter(
+        (e: AccrueEvent) =>
+          managed.has(e.mint) ||
+          ("investor" in e && e.investor === wallet) ||
+          ("owner" in e && e.owner === wallet) ||
+          ("manager" in e && e.manager === wallet) ||
+          ("from" in e && (e.from === wallet || e.to === wallet)),
+      );
+    },
 
     generateMintAddress: async () => {
       const signer = await generateKeyPairSigner();

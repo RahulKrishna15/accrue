@@ -166,6 +166,41 @@ async function main() {
   const holder = await client.fetchHolder(mint, dave.address);
   console.log(`  ${holder && holder.lastAcc > 0n ? "ok " : "FAIL"} Dave's Holder exists, last_acc > 0`);
 
+  // Activity feed: events read back from transaction logs.
+  console.log("");
+  const events = await client.fetchEvents({ mint });
+  const counts: Record<string, number> = {};
+  for (const e of events) counts[e.kind] = (counts[e.kind] ?? 0) + 1;
+  const expected = {
+    FundInitialized: 1,
+    HolderRegistered: 4,
+    Invested: 3,
+    RevenueDeposited: 1,
+    Transferred: 2,
+    Claimed: 4,
+    PausedSet: 1,
+  };
+  for (const [kind, n] of Object.entries(expected)) {
+    const ok = counts[kind] === n;
+    console.log(`  ${ok ? "ok " : "FAIL"} events: ${kind.padEnd(38)} ${counts[kind] ?? 0} (expected ${n})`);
+    if (!ok) process.exitCode = 1;
+  }
+  const newestFirst = events[0]?.kind === "PausedSet" && events.at(-1)?.kind === "FundInitialized";
+  console.log(`  ${newestFirst ? "ok " : "FAIL"} events are newest first`);
+  if (!newestFirst) process.exitCode = 1;
+  const transfer = events.find((e) => e.kind === "Transferred" && e.to === bob.address);
+  const transferOk = transfer?.kind === "Transferred" && transfer.from === alice.address && transfer.amount === 300n * USDC;
+  console.log(`  ${transferOk ? "ok " : "FAIL"} hook event decoded: Alice -> Bob 300 (from inside the Token-2022 CPI)`);
+  if (!transferOk) process.exitCode = 1;
+  const daves = await client.fetchEvents({ mint, wallet: dave.address });
+  const daveOk = daves.length === 2 && daves.every((e) => e.kind === "HolderRegistered" || e.kind === "Transferred");
+  console.log(`  ${daveOk ? "ok " : "FAIL"} wallet filter (Dave): ${daves.map((e) => e.kind).join(", ")}`);
+  if (!daveOk) process.exitCode = 1;
+  const managers = await client.fetchEvents({ mint, wallet: manager.address });
+  const managerOk = managers.length === events.length;
+  console.log(`  ${managerOk ? "ok " : "FAIL"} wallet filter (manager sees the whole fund): ${managers.length}`);
+  if (!managerOk) process.exitCode = 1;
+
   console.log(process.exitCode ? "\nClient smoke test FAILED" : "\nClient smoke test passed");
   process.exit();
 }
