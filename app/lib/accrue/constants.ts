@@ -1,7 +1,16 @@
+import { address } from "@solana/kit";
+
 /** Cluster the app targets. Devnet only; there is no mainnet build. */
 export const CLUSTER = "devnet" as const;
 export const WALLET_CHAIN = "solana:devnet" as const;
 export const RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL ?? "https://api.devnet.solana.com";
+
+/** The deployed Accrue program, taken from the generated client so there is one source of truth. */
+export { ACCRUE_PROGRAM_ADDRESS as PROGRAM_ID } from "./generated/programs/accrue";
+
+/** Test USDC: Circle's devnet USDC. Users get it from the Circle faucet. */
+export const USDC_MINT = address("4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU");
+export const USDC_FAUCET_URL = "https://faucet.circle.com";
 
 /** Test USDC and share tokens both use 6 decimals. */
 export const USDC_DECIMALS = 6;
