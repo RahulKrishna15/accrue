@@ -112,7 +112,7 @@ export function createMockClient(): AccrueClient {
           .reverse(),
       ),
 
-    generateMintAddress: () => mockAddress(`mint-${Date.now()}-${Math.random()}`),
+    generateMintAddress: async () => mockAddress(`mint-${Date.now()}-${Math.random()}`),
 
     async send(ixs, { signer, onPhase }) {
       const mode = load().demo.nextTx;

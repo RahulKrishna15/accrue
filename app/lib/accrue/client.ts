@@ -30,7 +30,7 @@ export interface AccrueClient {
   fetchUsdcBalance(owner: Address): Promise<bigint>;
   fetchEvents(filter?: { mint?: Address; wallet?: Address }): Promise<AccrueEvent[]>;
   /** Fresh keypair address for a new share mint. */
-  generateMintAddress(): Address;
+  generateMintAddress(): Promise<Address>;
   send(instructions: AccrueInstruction[], options: SendOptions): Promise<{ signature: string }>;
   /** Fires after any account the app reads may have changed. */
   subscribe(listener: () => void): () => void;

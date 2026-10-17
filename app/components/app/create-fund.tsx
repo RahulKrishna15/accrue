@@ -76,7 +76,7 @@ function CreateFundForm() {
     e.preventDefault();
     setSubmitted(true);
     if (Object.keys(errors).length || !address) return;
-    const mint = accrue.generateMintAddress();
+    const mint = await accrue.generateMintAddress();
     const ok = await tx.run(address, [
       getInitializeFundInstruction({
         manager: address,
