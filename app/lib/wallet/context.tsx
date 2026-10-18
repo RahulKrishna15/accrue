@@ -1,9 +1,7 @@
 "use client";
 
 import type { Address } from "@solana/kit";
-import { createClient } from "@solana/kit";
-import { solanaRpc } from "@solana/kit-plugin-rpc";
-import { walletSigner, type WalletState as KitWalletState } from "@solana/kit-plugin-wallet";
+import type { WalletState as KitWalletState } from "@solana/kit-plugin-wallet";
 import {
   useConnect,
   useConnectedWallet,
@@ -14,14 +12,11 @@ import {
 } from "@solana/kit-plugin-wallet/react";
 import { ClientProvider } from "@solana/react";
 import { createContext, useCallback, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
-import { accrue, RPC_URL, WALLET_CHAIN, type DemoWallet } from "@/lib/accrue";
+import { accrue, WALLET_CHAIN, type DemoWallet } from "@/lib/accrue";
 import { useClientSnapshot } from "@/lib/accrue/hooks";
+import { kitClient } from "./kit-client";
 
-/** One Kit client for the app. The connected Wallet Standard wallet fills payer + identity. */
-export const kitClient = createClient()
-  .use(walletSigner({ chain: WALLET_CHAIN }))
-  .use(solanaRpc({ rpcUrl: RPC_URL }));
-export type AppClient = typeof kitClient;
+export { kitClient, type AppClient } from "./kit-client";
 export type UiWallet = KitWalletState["wallets"][number];
 
 /** Wallets the app names when none is installed. Any Wallet Standard wallet still works. */

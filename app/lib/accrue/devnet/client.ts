@@ -83,6 +83,8 @@ export type DevnetClientDeps = {
 };
 
 const EXPLORER = "https://explorer.solana.com";
+/** Other wallets change funds too, so open pages re-read the chain this often. */
+const REFRESH_MS = 20_000;
 /** Holder layout: 8-byte discriminator, mint (32), then owner (32). */
 const HOLDER_OWNER_OFFSET = 40n;
 
@@ -160,6 +162,19 @@ export function createDevnetClient({ rpc, rpcSubscriptions, getSigner }: DevnetC
   /** Mint keypairs made by generateMintAddress, kept until initialize_fund signs with them. */
   const mintSigners = new Map<Address, KeyPairSigner>();
   const eventsFor = createEventReader(rpc);
+  let refreshTimer: ReturnType<typeof setInterval> | null = null;
+
+  function startRefresh() {
+    if (refreshTimer || typeof window === "undefined") return;
+    refreshTimer = setInterval(() => {
+      if (document.visibilityState === "visible") listeners.forEach((l) => l());
+    }, REFRESH_MS);
+  }
+
+  function stopRefresh() {
+    if (refreshTimer) clearInterval(refreshTimer);
+    refreshTimer = null;
+  }
 
   async function tokenBalance(account: Address): Promise<bigint> {
     const { value } = await rpc.getAccountInfo(account, { encoding: "base64" }).send();
@@ -426,7 +441,11 @@ export function createDevnetClient({ rpc, rpcSubscriptions, getSigner }: DevnetC
 
     subscribe(l) {
       listeners.add(l);
-      return () => void listeners.delete(l);
+      if (listeners.size === 1) startRefresh();
+      return () => {
+        listeners.delete(l);
+        if (listeners.size === 0) stopRefresh();
+      };
     },
 
     explorerTxUrl: (signature) => `${EXPLORER}/tx/${signature}?cluster=devnet`,
