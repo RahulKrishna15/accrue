@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowSquareOut, Flask, X } from "@phosphor-icons/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { accrue } from "@/lib/accrue";
 import { SUPPORTED_WALLETS, useWallet } from "@/lib/wallet/context";
 import { cx } from "./ui";
@@ -9,7 +9,10 @@ import { cx } from "./ui";
 /** Native <dialog>: focus trap, Esc to close and inert background come from the platform. */
 export function WalletDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
-  const { wallets, ready, connect, connectDemo, status, connectError } = useWallet();
+  const { wallets, ready, connect, connectDemo, connecting, connectError, status } = useWallet();
+  // The wallet whose prompt is open, so only its row says "Check your wallet".
+  const [pending, setPending] = useState<string | null>(null);
+  const adding = status === "connected";
 
   useEffect(() => {
     const d = ref.current;
@@ -17,10 +20,6 @@ export function WalletDialog({ open, onClose }: { open: boolean; onClose: () => 
     if (open && !d.open) d.showModal();
     if (!open && d.open) d.close();
   }, [open]);
-
-  useEffect(() => {
-    if (status === "connected") onClose();
-  }, [status, onClose]);
 
   const installed = new Set(wallets.map((w) => w.name.toLowerCase()));
   const missing = SUPPORTED_WALLETS.filter((w) => !installed.has(w.name.toLowerCase()));
@@ -35,7 +34,7 @@ export function WalletDialog({ open, onClose }: { open: boolean; onClose: () => 
     >
       <div className="flex items-center justify-between border-b border-line px-5 py-4">
         <h2 id="wallet-dialog-title" className="font-semibold">
-          Connect a wallet
+          {adding ? "Connect another wallet" : "Connect a wallet"}
         </h2>
         <button type="button" onClick={onClose} className="press inline-flex size-9 items-center justify-center rounded-control hover:bg-sunk" aria-label="Close">
           <X size={18} />
@@ -46,7 +45,11 @@ export function WalletDialog({ open, onClose }: { open: boolean; onClose: () => 
       {open ? (
         <div className="flex flex-col gap-5 p-5">
           <div>
-            <p className="text-sm text-muted">Use a wallet set to Solana devnet.</p>
+            <p className="text-sm text-muted">
+              {adding
+                ? "Each wallet you connect adds its account to the Accounts list, so you can switch without leaving Accrue."
+                : "Use a wallet set to Solana devnet."}
+            </p>
             <ul className="mt-3 flex flex-col gap-2">
               {!ready ? (
                 <li className="skeleton h-12" />
@@ -57,15 +60,24 @@ export function WalletDialog({ open, onClose }: { open: boolean; onClose: () => 
                   <li key={w.name}>
                     <button
                       type="button"
-                      onClick={() => connect(w)}
-                      disabled={status === "connecting"}
+                      onClick={async () => {
+                        setPending(w.name);
+                        const ok = await connect(w);
+                        setPending(null);
+                        if (ok) onClose();
+                      }}
+                      disabled={connecting}
                       className="press flex h-12 w-full items-center gap-3 rounded-control border border-line-strong px-3 text-left hover:bg-sunk disabled:opacity-50"
                     >
                       {/* Wallet Standard icons are data URIs supplied by the extension. */}
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={w.icon} alt="" width={24} height={24} className="size-6 rounded-md" />
                       <span className="font-medium">{w.name}</span>
-                      {status === "connecting" ? <span className="ml-auto text-sm text-muted">Check your wallet</span> : null}
+                      {pending === w.name ? (
+                        <span className="ml-auto text-sm text-muted">Check your wallet</span>
+                      ) : w.accounts.length > 0 ? (
+                        <span className="ml-auto text-sm text-muted">Connected</span>
+                      ) : null}
                     </button>
                   </li>
                 ))
@@ -104,7 +116,10 @@ export function WalletDialog({ open, onClose }: { open: boolean; onClose: () => 
                   <li key={w.address}>
                     <button
                       type="button"
-                      onClick={() => connectDemo(w)}
+                      onClick={() => {
+                        connectDemo(w);
+                        onClose();
+                      }}
                       className={cx("press flex w-full flex-col items-start rounded-control border border-line-strong px-3 py-2.5 text-left hover:bg-sunk")}
                     >
                       <span className="font-medium">{w.label}</span>

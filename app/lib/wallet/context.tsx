@@ -5,8 +5,8 @@ import type { WalletState as KitWalletState } from "@solana/kit-plugin-wallet";
 import {
   useConnect,
   useConnectedWallet,
-  useDisconnect,
   useIsWalletReady,
+  useSelectAccount,
   useWallets,
   useWalletStatus,
 } from "@solana/kit-plugin-wallet/react";
@@ -18,6 +18,10 @@ import { kitClient } from "./kit-client";
 
 export { kitClient, type AppClient } from "./kit-client";
 export type UiWallet = KitWalletState["wallets"][number];
+export type UiWalletAccount = UiWallet["accounts"][number];
+
+/** An account the app may use right now: one a connected wallet has shared with us. */
+export type AppAccount = { address: Address; label: string | null; wallet: UiWallet; account: UiWalletAccount; active: boolean };
 
 /** Wallets the app names when none is installed. Any Wallet Standard wallet still works. */
 export const SUPPORTED_WALLETS = [
@@ -34,9 +38,19 @@ type WalletContextValue = {
   isDemo: boolean;
   wrongNetwork: boolean;
   wallets: readonly UiWallet[];
+  /**
+   * Every account shared by a connected wallet. Phantom, Solflare and Backpack share only the
+   * account selected inside the wallet, so this grows by connecting more wallets.
+   */
+  accounts: readonly AppAccount[];
   ready: boolean;
-  connect: (wallet: UiWallet) => void;
+  /** True while a wallet prompt is open, even if another wallet is still connected. */
+  connecting: boolean;
+  /** Resolves true once the wallet is connected, false if the user declined or it failed. */
+  connect: (wallet: UiWallet) => Promise<boolean>;
   connectDemo: (wallet: DemoWallet) => void;
+  /** Switches to another shared account without a wallet prompt. */
+  selectAccount: (account: AppAccount) => void;
   disconnect: () => void;
   connectError: string | null;
 };
@@ -48,8 +62,8 @@ function WalletState({ children }: { children: ReactNode }) {
   const connected = useConnectedWallet(kitClient);
   const status = useWalletStatus(kitClient);
   const ready = useIsWalletReady(kitClient);
-  const { dispatch: connectWallet, error } = useConnect(kitClient);
-  const { dispatch: disconnectWallet } = useDisconnect(kitClient);
+  const { dispatchAsync: connectWallet, error } = useConnect(kitClient);
+  const selectWalletAccount = useSelectAccount(kitClient);
   // The demo wallet choice lives in the mock's persisted demo state so it survives reloads.
   const demoAddress = useClientSnapshot(() => accrue.demo?.getState().demoWallet ?? null, null);
   const demo = accrue.demoWallets?.find((w) => w.address === demoAddress) ?? null;
@@ -58,27 +72,76 @@ function WalletState({ children }: { children: ReactNode }) {
   const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
   const demoWrongNetwork = useClientSnapshot(() => accrue.demo?.getState().wrongNetwork ?? false, false);
 
+  // A wallet's `accounts` is non-empty only once it has authorized this site.
+  const accounts = useMemo<AppAccount[]>(
+    () =>
+      wallets.flatMap((wallet) =>
+        wallet.accounts.map((account) => ({
+          address: account.address as Address,
+          label: account.label ?? null,
+          wallet,
+          account,
+          active: !demo && connected?.account.address === account.address && connected.wallet.name === wallet.name,
+        })),
+      ),
+    [wallets, connected, demo],
+  );
+
   const connect = useCallback(
-    (w: UiWallet) => {
+    async (w: UiWallet) => {
       setDemo(null);
-      connectWallet(w);
+      try {
+        await connectWallet(w);
+        return true;
+      } catch {
+        // The error (or a superseded attempt) surfaces through useConnect's `error`.
+        return false;
+      }
     },
     [connectWallet, setDemo],
   );
+  const selectAccount = useCallback(
+    (a: AppAccount) => {
+      setDemo(null);
+      selectWalletAccount(a.account);
+    },
+    [selectWalletAccount, setDemo],
+  );
   const connectDemo = useCallback(
     (w: DemoWallet) => {
-      if (connected) disconnectWallet();
+      if (connected) void kitClient.wallet.disconnect();
       setDemo(w);
     },
-    [connected, disconnectWallet, setDemo],
+    [connected, setDemo],
   );
+  // Disconnects the active wallet only. If another connected wallet still shares an account, use it.
   const disconnect = useCallback(() => {
     setDemo(null);
-    if (connected) disconnectWallet();
-  }, [connected, disconnectWallet, setDemo]);
+    if (!connected) return;
+    const next = accounts.find((a) => a.wallet.name !== connected.wallet.name);
+    void kitClient.wallet.disconnect().then(() => {
+      if (next) {
+        try {
+          selectWalletAccount(next.account);
+        } catch {
+          // That wallet dropped the account meanwhile; staying disconnected is fine.
+        }
+      }
+    });
+  }, [connected, accounts, selectWalletAccount, setDemo]);
 
   const value = useMemo<WalletContextValue>(() => {
-    const base = { wallets, ready, connect, connectDemo, disconnect, connectError: error ? describe(error) : null };
+    const base = {
+      wallets,
+      accounts: demo ? [] : accounts,
+      ready,
+      connecting: status === "connecting",
+      connect,
+      connectDemo,
+      selectAccount,
+      disconnect,
+      connectError: error && !isAbort(error) ? describe(error) : null,
+    };
     if (!hydrated) {
       return { ...base, status: "pending", address: null, label: null, icon: null, isDemo: false, wrongNetwork: false };
     }
@@ -113,12 +176,14 @@ function WalletState({ children }: { children: ReactNode }) {
       isDemo: false,
       wrongNetwork: false,
     };
-  }, [hydrated, wallets, ready, connect, connectDemo, disconnect, error, demo, connected, status, demoWrongNetwork]);
+  }, [hydrated, wallets, accounts, ready, connect, connectDemo, selectAccount, disconnect, error, demo, connected, status, demoWrongNetwork]);
 
   return <WalletContext.Provider value={value}>{children}</WalletContext.Provider>;
 }
 
 const noopSubscribe = () => () => {};
+
+const isAbort = (e: unknown) => e instanceof DOMException && e.name === "AbortError";
 
 function describe(e: unknown) {
   const m = e instanceof Error ? e.message : String(e);
