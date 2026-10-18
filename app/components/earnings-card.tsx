@@ -1,7 +1,7 @@
 "use client";
 
 import { formatDate, formatUnits } from "@/lib/accrue/format";
-import { holderDailyRate, streamProgress, type StreamState } from "@/lib/accrue/math";
+import { holderDailyRate, projectPending, streamProgress, type StreamState } from "@/lib/accrue/math";
 import type { HolderAccount } from "@/lib/accrue/types";
 import type { ReactNode } from "react";
 import { LiveAmount } from "./live-amount";
@@ -28,6 +28,8 @@ export function EarningsCard({ title, subtitle, fund, holder, balance, now, acti
   const perDay = holderDailyRate(fund, balance, nowSec);
   const progress = streamProgress(fund, nowSec);
   const streaming = perDay > 0n;
+  // Claimable once the current stream has fully paid out, assuming share balances stay as they are.
+  const atStreamEnd = streaming ? projectPending(fund, holder, balance, Number(fund.streamEnd) * 1000) : null;
 
   // The forest surface clips its grain, so the tinted shadow lives on this wrapper.
   return (
@@ -81,6 +83,15 @@ export function EarningsCard({ title, subtitle, fund, holder, balance, now, acti
           >
             <div className="h-full origin-left rounded-full bg-panel-income" style={{ transform: `scaleX(${progress})` }} />
           </div>
+          {atStreamEnd !== null ? (
+            <div className="mt-3 flex items-baseline justify-between gap-4 text-sm">
+              <span className="text-panel-muted">
+                Total by stream end
+                <span className="block text-xs">If no shares change hands</span>
+              </span>
+              <span className="num text-panel-income">${formatUnits(atStreamEnd, 2)}</span>
+            </div>
+          ) : null}
         </div>
       ) : null}
 

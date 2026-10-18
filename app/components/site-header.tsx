@@ -1,6 +1,6 @@
 "use client";
 
-import { Info, List, X } from "@phosphor-icons/react";
+import { List, X } from "@phosphor-icons/react";
 import { AnimatePresence, motion } from "motion/react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -44,28 +44,6 @@ export function LogoMark({ size = 28 }: { size?: number }) {
       </g>
       <rect x="0.5" y="0.5" width="27" height="27" rx="7.5" fill="none" stroke="var(--panel-line)" />
     </svg>
-  );
-}
-
-/** Persistent network notice. Not dismissible: every amount in the app is Test USDC on devnet. */
-export function NetworkBanner() {
-  return (
-    <div className="border-b border-line bg-sunk">
-      <p className="mx-auto flex max-w-7xl items-start gap-2 px-4 py-2 text-sm text-ink sm:items-center sm:px-6">
-        <Info size={16} className="mt-0.5 shrink-0 text-accent sm:mt-0" aria-hidden />
-        <span>
-          <strong className="font-medium">Solana devnet, Test USDC only.</strong>{" "}
-          {accrue.mode === "mock" ? (
-            <span className="text-muted">
-              <span className="sm:hidden">Simulated ledger.</span>
-              <span className="hidden sm:inline">The program is not deployed yet, so transactions run against a simulated ledger.</span>
-            </span>
-          ) : (
-            <span className="text-muted">Nothing here has real value.</span>
-          )}
-        </span>
-      </p>
-    </div>
   );
 }
 
@@ -137,7 +115,6 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-30 bg-bg/95 backdrop-blur-sm">
-      <NetworkBanner />
       <div className="relative border-b border-line">
         <nav aria-label="Main" className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-6">
           <Logo />
@@ -190,8 +167,8 @@ export function SiteHeader() {
 export function SiteFooter() {
   return (
     <footer className={cx("mt-auto border-t border-line", accrue.demo && "pb-16")}>
-      <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
-        <p>Runs on Solana devnet with test USDC. Not investment advice.</p>
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-8 text-sm text-muted sm:px-6">
+        <Logo />
         <div className="flex gap-4">
           <Link href="/funds" className="hover:text-ink">
             Funds

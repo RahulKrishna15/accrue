@@ -1,5 +1,6 @@
 import type { Address } from "@solana/kit";
 import { Suspense } from "react";
+import { PageGuide } from "@/components/page-guide";
 import { FundView } from "@/components/app/fund-view";
 import { Skeleton } from "@/components/ui";
 
@@ -11,6 +12,7 @@ export default function FundPage({ params }: PageProps<"/funds/[mint]">) {
           <FundView mint={mint as Address} />
         ))}
       </Suspense>
+      <PageGuide page="fund" />
     </div>
   );
 }

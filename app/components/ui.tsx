@@ -1,4 +1,4 @@
-import { CaretDown } from "@phosphor-icons/react/ssr";
+import { CaretDown, Question } from "@phosphor-icons/react/ssr";
 import type { ButtonHTMLAttributes, ComponentProps, CSSProperties, ReactNode } from "react";
 import { formatUnits } from "@/lib/accrue/format";
 
@@ -157,7 +157,8 @@ export function Select({ className, size = "md", children, ...props }: Omit<Comp
   );
 }
 
-export function PageHeader({ title, description, actions }: { title: string; description?: ReactNode; actions?: ReactNode }) {
+/** `guide` adds a link to the page's "How this page works" section (components/page-guide.tsx). */
+export function PageHeader({ title, description, actions, guide }: { title: string; description?: ReactNode; actions?: ReactNode; guide?: boolean }) {
   return (
     <div className="flex flex-col gap-4 pb-8 sm:flex-row sm:items-end sm:justify-between">
       <div className="max-w-[65ch]">
@@ -166,6 +167,16 @@ export function PageHeader({ title, description, actions }: { title: string; des
           <p className="enter mt-2 leading-relaxed text-muted" style={enter(1)}>
             {description}
           </p>
+        ) : null}
+        {guide ? (
+          <a
+            href="#guide"
+            className="enter mt-3 inline-flex items-center gap-1.5 rounded-control text-sm font-medium text-accent-strong underline-offset-4 hover:underline"
+            style={enter(1)}
+          >
+            <Question size={16} aria-hidden />
+            How this page works
+          </a>
         ) : null}
       </div>
       {actions ? (

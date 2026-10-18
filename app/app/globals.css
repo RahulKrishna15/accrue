@@ -149,6 +149,13 @@ body {
   background: var(--income-soft);
 }
 
+/* In-page links such as "How this page works" glide to their section. Next.js turns this off during route changes (data-scroll-behavior on <html>). */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
 .skeleton {
   background: var(--sunk);
   border-radius: 6px;
@@ -289,5 +296,21 @@ input[type="range"] {
 @keyframes backdrop-in {
   from {
     opacity: 0;
+  }
+}
+
+/* Live marker beside a growing amount: an amber ring breathes out every 2s. */
+@media (prefers-reduced-motion: no-preference) {
+  .live-dot {
+    animation: live-dot 2s ease-out infinite;
+  }
+}
+@keyframes live-dot {
+  0% {
+    box-shadow: 0 0 0 0 var(--income-soft);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 6px transparent;
   }
 }
