@@ -2,7 +2,6 @@
 
 import type { Address } from "@solana/kit";
 import { ArrowLeft, ArrowRight, MagnifyingGlass } from "@phosphor-icons/react";
-import { AnimatePresence } from "motion/react";
 import Link from "next/link";
 import { accrue } from "@/lib/accrue";
 import { formatBps, formatDate, formatDuration, formatUnits, shortAddress } from "@/lib/accrue/format";
@@ -13,7 +12,7 @@ import { useWallet } from "@/lib/wallet/context";
 import { EarningsCard } from "../earnings-card";
 import { FadeIn } from "../motion";
 import { Amount, EmptyState, FundMark, Panel, Skeleton, Stat, StatusBadge, buttonClass, enter } from "../ui";
-import { EventRow } from "./activity-feed";
+import { RecentActivitySkeleton, RecentActivityTable } from "./activity-feed";
 import { CapMeter } from "./funds-explorer";
 import { InvestPanel } from "./invest-panel";
 
@@ -65,7 +64,7 @@ function FundDetail({ fund }: { fund: Fund }) {
         </div>
       </div>
 
-      <div className="enter grid gap-8 lg:grid-cols-[1fr_24rem]" style={enter(2)}>
+      <div className="enter grid gap-8 lg:grid-cols-[minmax(0,1fr)_24rem]" style={enter(2)}>
         <div className="flex flex-col gap-8">
           <Panel className="p-5 sm:p-6">
             <dl className="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3">
@@ -156,6 +155,7 @@ function YourPosition({ fund }: { fund: Fund }) {
 }
 
 function RecentActivity({ mint }: { mint: Address }) {
+  const { address } = useWallet();
   const events = useEvents({ mint });
   return (
     <section aria-labelledby="act-h">
@@ -168,19 +168,11 @@ function RecentActivity({ mint }: { mint: Address }) {
         </Link>
       </div>
       {!events.data ? (
-        <div className="flex flex-col gap-3">
-          {Array.from({ length: 3 }, (_, i) => (
-            <Skeleton key={i} className="h-12" />
-          ))}
-        </div>
+        <RecentActivitySkeleton rows={3} />
+      ) : events.data.length === 0 ? (
+        <p className="rounded-panel border border-dashed border-line-strong px-5 py-6 text-sm text-muted">No activity yet.</p>
       ) : (
-        <ul className="divide-y divide-line">
-          <AnimatePresence initial={false}>
-            {events.data.slice(0, 5).map((e, i) => (
-              <EventRow key={`${e.signature}-${e.kind}`} event={e} index={i} compact />
-            ))}
-          </AnimatePresence>
-        </ul>
+        <RecentActivityTable events={events.data.slice(0, 5)} me={address} showFund={false} />
       )}
     </section>
   );
@@ -197,7 +189,7 @@ function FundSkeleton() {
           <Skeleton className="h-4 w-40" />
         </div>
       </div>
-      <div className="grid gap-8 lg:grid-cols-[1fr_24rem]">
+      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_24rem]">
         <div className="flex flex-col gap-8">
           <Skeleton className="h-64 rounded-panel" />
           <Skeleton className="h-20" />

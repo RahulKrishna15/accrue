@@ -1,3 +1,4 @@
+import { DataTable, RowTh, Td, Th } from "./data-table";
 import { GUIDES, type Guide, type GuideKey } from "@/lib/guide";
 
 /**
@@ -8,7 +9,7 @@ export function PageGuide({ page }: { page: GuideKey }) {
   const g: Guide = GUIDES[page];
   return (
     <section id="guide" aria-labelledby="guide-title" className="mt-16 scroll-mt-24 border-t border-line pt-10 md:mt-20">
-      <div className="grid gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16">
         <div>
           <h2 id="guide-title" className="text-2xl font-semibold tracking-tight text-ink">
             How this page works
@@ -35,28 +36,22 @@ export function PageGuide({ page }: { page: GuideKey }) {
         </div>
         <div>
           <h3 className="font-medium text-ink">Words on this page</h3>
-          <table className="mt-3 w-full border-collapse text-left">
+          <DataTable caption="Words used on this page and what they mean" minWidth="0" className="mt-3">
             <thead>
-              <tr className="border-y border-line-strong text-sm text-muted">
-                <th scope="col" className="w-[38%] py-2.5 pr-4 font-medium sm:w-44">
-                  Term
-                </th>
-                <th scope="col" className="py-2.5 font-medium">
-                  Meaning
-                </th>
+              <tr>
+                <Th className="w-[38%] sm:w-48">Term</Th>
+                <Th>Meaning</Th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line border-b border-line">
+            <tbody>
               {g.terms.map((t) => (
-                <tr key={t.term} className="align-top">
-                  <th scope="row" className="py-3.5 pr-4 font-medium text-ink">
-                    {t.term}
-                  </th>
-                  <td className="max-w-[60ch] py-3.5 leading-relaxed text-muted">{t.meaning}</td>
+                <tr key={t.term} className="[&>*]:align-top">
+                  <RowTh>{t.term}</RowTh>
+                  <Td className="leading-relaxed text-muted">{t.meaning}</Td>
                 </tr>
               ))}
             </tbody>
-          </table>
+          </DataTable>
         </div>
       </div>
     </section>

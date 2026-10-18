@@ -24,6 +24,7 @@ import { formatBps, formatDateTime, formatUnits, shortAddress } from "@/lib/accr
 import { useEvents, useFunds } from "@/lib/accrue/hooks";
 import type { AccrueEvent } from "@/lib/accrue/types";
 import { useWallet } from "@/lib/wallet/context";
+import { DataTable, GroupRow, RowTh, Td, Th, rowClass } from "../data-table";
 import { FadeIn, duration, ease, spring } from "../motion";
 import { EmptyState, Select, Skeleton, cx, enter } from "../ui";
 
@@ -361,6 +362,93 @@ function TableSkeleton() {
           <Skeleton className="hidden h-4 w-24 md:block" />
           <Skeleton className="ml-auto h-4 w-16" />
           <Skeleton className="hidden h-4 w-20 md:block" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Framed-grid version of the events table, for summaries such as the fund page's recent activity. */
+export function RecentActivityTable({
+  events,
+  me,
+  names,
+  showFund,
+}: {
+  events: readonly AccrueEvent[];
+  me: Address | null;
+  names?: Map<Address, string>;
+  showFund: boolean;
+}) {
+  const groups = groupByDay(events);
+  const cols = showFund ? 6 : 5;
+  return (
+    <DataTable caption="Accrue program events, newest first" minWidth={showFund ? "52rem" : "42rem"}>
+      <thead>
+        <tr>
+          <Th pinned>Event</Th>
+          {showFund ? <Th>Fund</Th> : null}
+          <Th>Account</Th>
+          <Th numeric>Amount</Th>
+          <Th numeric>Time</Th>
+          <Th>Transaction</Th>
+        </tr>
+      </thead>
+      {groups.map((g) => (
+        <tbody key={g.key}>
+          <GroupRow colSpan={cols}>
+            {g.label}
+            <span className="ml-2 font-normal text-muted">
+              {g.events.length} {g.events.length === 1 ? "event" : "events"}
+            </span>
+          </GroupRow>
+          <AnimatePresence initial={false}>
+            {g.events.map((e) => {
+              const c = cellsFor(e, me);
+              return (
+                <motion.tr key={`${e.signature}-${e.kind}`} {...rowMotion} className={rowClass}>
+                  <RowTh pinned className="font-normal whitespace-nowrap">
+                    <EventName event={e} />
+                  </RowTh>
+                  {showFund ? (
+                    <Td className="max-w-[14rem] truncate">
+                      <Link href={`/funds/${e.mint}`} className="text-ink underline-offset-4 hover:underline">
+                        {names?.get(e.mint) ?? shortAddress(e.mint)}
+                      </Link>
+                    </Td>
+                  ) : null}
+                  <Td>{c.account}</Td>
+                  <Td numeric>
+                    <span className="block text-ink">{c.amount}</span>
+                    {c.note ? <span className="block font-sans text-xs text-muted">{c.note}</span> : null}
+                  </Td>
+                  <Td numeric className="text-sm text-muted">
+                    <Time ts={e.timestamp} />
+                  </Td>
+                  <Td className="text-sm whitespace-nowrap">
+                    <TxLink signature={e.signature} />
+                  </Td>
+                </motion.tr>
+              );
+            })}
+          </AnimatePresence>
+        </tbody>
+      ))}
+    </DataTable>
+  );
+}
+
+export function RecentActivitySkeleton({ rows = 6 }: { rows?: number }) {
+  return (
+    <div aria-busy="true" aria-label="Loading activity" className="overflow-hidden rounded-panel border border-line-strong/60 bg-surface">
+      <div className="h-10 border-b border-line-strong/60 bg-sunk" />
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className="grid grid-cols-[2fr_1fr_1fr_1fr] divide-x divide-line border-b border-line last:border-b-0">
+          {["w-36", "w-24", "w-16", "w-20"].map((w, j) => (
+            <div key={w} className={cx("flex px-4 py-4", j > 1 && "justify-end")}>
+              <Skeleton className={cx("h-4", w)} />
+            </div>
+          ))}
         </div>
       ))}
     </div>
