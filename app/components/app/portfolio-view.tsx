@@ -1,20 +1,19 @@
 "use client";
 
-import { Briefcase, PauseCircle } from "@phosphor-icons/react";
+import { Briefcase } from "@phosphor-icons/react";
 import Link from "next/link";
 import { accrue } from "@/lib/accrue";
 import { getClaimInstruction } from "@/lib/accrue/instructions";
 import { useChainClockOffset, usePositions, useTransaction, useUsdcBalance } from "@/lib/accrue/hooks";
-import { formatUnits } from "@/lib/accrue/format";
-import { holderDailyRate, projectPending } from "@/lib/accrue/math";
+import { formatDate, formatUnits } from "@/lib/accrue/format";
+import { holderDailyRate, projectPending, streamProgress } from "@/lib/accrue/math";
 import type { Position } from "@/lib/accrue/types";
 import { useWallet } from "@/lib/wallet/context";
 import { ConnectGate } from "../connect-gate";
-import { EarningsCard } from "../earnings-card";
 import { LiveAmount } from "../live-amount";
 import { FadeIn, NumberTicker } from "../motion";
 import { TxStatus } from "../tx-status";
-import { Amount, Button, EmptyState, Skeleton, buttonClass, cx, enter } from "../ui";
+import { Amount, Button, EmptyState, FundMark, Skeleton, StatusBadge, buttonClass, cx, enter } from "../ui";
 
 export function PortfolioView() {
   return (
@@ -49,18 +48,28 @@ function Portfolio() {
   const list = positions.data;
 
   return (
-    <FadeIn className="flex flex-col gap-8">
-      <PortfolioSummary positions={list} usdc={usdc.data} />
+    <FadeIn className="flex flex-col gap-12">
+      <section aria-labelledby="all-funds-h" className="flex flex-col gap-4">
+        <SectionHeading id="all-funds-h" title="All funds" note={`Totals across your ${list.length} ${list.length === 1 ? "fund" : "funds"}`} />
+        <PortfolioSummary positions={list} usdc={usdc.data} />
+      </section>
 
-      {/* auto-fit: three positions fill one row on wide screens instead of leaving an empty cell. */}
-      <ul className="grid items-start gap-6 md:grid-cols-[repeat(auto-fit,minmax(20rem,1fr))]">
-        {list.map((p, i) => (
-          <li key={p.fund.mint} className="enter" style={enter(i + 1, 80)}>
-            <PositionCard position={p} />
-          </li>
-        ))}
-      </ul>
+      <section aria-labelledby="by-fund-h" className="enter flex flex-col gap-4" style={enter(2)}>
+        <SectionHeading id="by-fund-h" title="By fund" note="Income each fund is paying you, claimable one at a time" />
+        <PositionList positions={list} />
+      </section>
     </FadeIn>
+  );
+}
+
+function SectionHeading({ id, title, note }: { id: string; title: string; note: string }) {
+  return (
+    <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-6">
+      <h2 id={id} className="text-xl font-semibold tracking-tight text-ink">
+        {title}
+      </h2>
+      <p className="text-sm text-muted">{note}</p>
+    </div>
   );
 }
 
@@ -194,56 +203,138 @@ function PortfolioSummary({ positions, usdc }: { positions: Position[]; usdc: bi
   );
 }
 
-function PositionCard({ position: p }: { position: Position }) {
+/** Desktop columns, shared by the header row and every fund row so they line up. */
+const ROW_COLS = "lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1.2fr)_minmax(0,0.8fr)_minmax(0,0.6fr)_minmax(0,1.2fr)_9.5rem]";
+
+/** One framed list, one row per fund: the breakdown under the All funds total. */
+function PositionList({ positions }: { positions: Position[] }) {
+  return (
+    <div className="overflow-hidden rounded-panel border border-line bg-surface">
+      <div aria-hidden className={cx("hidden gap-6 border-b border-line bg-sunk px-5 py-3 text-sm font-medium text-muted lg:grid", ROW_COLS)}>
+        <span>Fund</span>
+        <span className="text-right">Claimable</span>
+        <span className="text-right">Rate</span>
+        <span className="text-right">Shares</span>
+        <span>Current stream</span>
+        <span className="sr-only">Action</span>
+      </div>
+      <ul className="divide-y divide-line">
+        {positions.map((p) => (
+          <li key={p.fund.mint}>
+            <PositionRow position={p} />
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function PositionRow({ position: p }: { position: Position }) {
   const { address } = useWallet();
   const tx = useTransaction();
-  const claimable = projectPending(p.fund, p.holder, p.balance, accrue.now());
-  const subtitle = p.fund.paused ? (
-    <span className="inline-flex items-center gap-1">
-      <PauseCircle size={14} aria-hidden /> Fund paused. Claims still work.
-    </span>
-  ) : p.fund.closed ? (
-    "Closed to new investment. Still earning."
-  ) : (
-    <Link href={`/funds/${p.fund.mint}`} className="underline-offset-4 hover:underline">
-      View fund
-    </Link>
-  );
+  const nowMs = accrue.now();
+  const nowSec = BigInt(Math.floor(nowMs / 1000));
+  const claimable = projectPending(p.fund, p.holder, p.balance, nowMs);
+  const perDay = holderDailyRate(p.fund, p.balance, nowSec);
+  const progress = streamProgress(p.fund, nowSec);
+  const hasStream = p.fund.streamEnd > 0n;
 
   return (
-    <div className="flex flex-col gap-3">
-      <EarningsCard
-        title={`${p.fund.metadata.name} (${p.fund.metadata.symbol})`}
-        subtitle={subtitle}
-        fund={p.fund}
-        holder={p.holder}
-        balance={p.balance}
-        now={accrue.now}
-        action={
-          // Claim is never blocked by pause or close; it only needs something to claim.
+    <div className="px-5 py-5 lg:py-4">
+      <div className={cx("grid grid-cols-2 items-center gap-x-6 gap-y-4", ROW_COLS)}>
+        {/* Fund */}
+        <div className="col-span-2 flex min-w-0 items-center gap-3 lg:col-span-1">
+          <FundMark symbol={p.fund.metadata.symbol} image={p.fund.metadata.image} size={36} />
+          <div className="min-w-0">
+            <Link href={`/funds/${p.fund.mint}`} className="block truncate font-medium text-ink underline-offset-4 hover:underline">
+              {p.fund.metadata.name}
+            </Link>
+            <div className="mt-0.5 flex items-center gap-2 text-sm text-muted">
+              <span className="num">{p.fund.metadata.symbol}</span>
+              {p.fund.paused || p.fund.closed ? <StatusBadge paused={p.fund.paused} closed={p.fund.closed} /> : null}
+            </div>
+          </div>
+        </div>
+
+        {/* Claimable, live */}
+        <Cell label="Claimable" className="lg:text-right">
+          <LiveAmount
+            positions={[p]}
+            now={accrue.now}
+            className="text-lg font-medium text-accent-strong"
+            tailClassName="text-[0.7em] text-muted"
+          />
+        </Cell>
+
+        <Cell label="Rate" className="lg:text-right">
+          <span className="num text-ink">{perDay > 0n ? `$${formatUnits(perDay, 2)} / day` : "None"}</span>
+        </Cell>
+
+        <Cell label="Shares" className="lg:text-right">
+          <span className="num text-ink">{formatUnits(p.balance, 2)}</span>
+        </Cell>
+
+        <Cell label="Current stream">
+          {hasStream ? (
+            <div className="flex flex-col gap-1.5">
+              <div
+                className="h-1.5 overflow-hidden rounded-full bg-sunk"
+                role="progressbar"
+                aria-label={`${p.fund.metadata.name} stream released`}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round(progress * 100)}
+              >
+                <div className="h-full origin-left rounded-full bg-income" style={{ transform: `scaleX(${progress})` }} />
+              </div>
+              <span className="text-xs text-muted">{progress >= 1 ? `Ended ${formatDate(p.fund.streamEnd)}` : `Ends ${formatDate(p.fund.streamEnd)}`}</span>
+            </div>
+          ) : (
+            <span className="text-sm text-muted">No income yet</span>
+          )}
+        </Cell>
+
+        {/* Claim is never blocked by pause or close; it only needs something to claim. */}
+        <div className="col-span-2 lg:col-span-1 lg:justify-self-end">
           <Button
-            variant="accent"
-            className="w-full sm:w-auto"
+            variant={claimable === 0n ? "secondary" : "accent"}
+            size="sm"
+            className="w-full lg:w-auto"
             disabled={tx.busy || claimable === 0n}
             onClick={() => address && tx.run(address, [getClaimInstruction({ owner: address, mint: p.fund.mint })])}
           >
-            {tx.state.phase === "signing" ? "Approve in wallet" : tx.state.phase === "confirming" ? "Confirming" : claimable === 0n ? "Nothing to claim yet" : "Claim income"}
+            {tx.state.phase === "signing" ? "Approve in wallet" : tx.state.phase === "confirming" ? "Confirming" : claimable === 0n ? "Nothing to claim" : "Claim"}
           </Button>
-        }
-      />
-      <TxStatus state={tx.state} success="Claimed. The USDC is in your wallet." />
+        </div>
+      </div>
+      {tx.state.phase !== "idle" ? <TxStatus state={tx.state} success="Claimed. The USDC is in your wallet." className="mt-4" /> : null}
+    </div>
+  );
+}
+
+/** A value with its column name shown only on narrow screens, where there is no header row. */
+function Cell({ label, className, children }: { label: string; className?: string; children: React.ReactNode }) {
+  return (
+    <div className={cx("min-w-0", className)}>
+      <p className="mb-1 text-sm text-muted lg:hidden">{label}</p>
+      {children}
     </div>
   );
 }
 
 function PortfolioSkeleton() {
   return (
-    <div aria-busy="true" aria-label="Loading holdings" className="flex flex-col gap-8">
-      <Skeleton className="h-28 rounded-panel" />
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        <Skeleton className="h-80 rounded-panel" />
-        <Skeleton className="h-80 rounded-panel" />
-        <Skeleton className="hidden h-80 rounded-panel xl:block" />
+    <div aria-busy="true" aria-label="Loading holdings" className="flex flex-col gap-12">
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-6 w-32" />
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+          <Skeleton className="h-60 rounded-panel" />
+          <Skeleton className="h-60 rounded-panel" />
+        </div>
+      </div>
+      <div className="flex flex-col gap-4">
+        <Skeleton className="h-6 w-28" />
+        <Skeleton className="h-40 rounded-panel" />
       </div>
     </div>
   );
