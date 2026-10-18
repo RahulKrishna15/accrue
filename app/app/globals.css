@@ -134,6 +134,12 @@
   --radius-control: 10px;
 }
 
+/* No rubber-band bounce past the header or footer (macOS and iOS overscroll). */
+html,
+body {
+  overscroll-behavior: none;
+}
+
 body {
   background: var(--bg);
   color: var(--ink);
