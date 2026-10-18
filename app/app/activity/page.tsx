@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { ActivityFeed } from "@/components/app/activity-feed";
-import { PageGuide } from "@/components/page-guide";
 import { PageHeader, Skeleton, enter } from "@/components/ui";
 
 export const metadata: Metadata = { title: "Activity" };
@@ -9,7 +8,7 @@ export const metadata: Metadata = { title: "Activity" };
 export default function ActivityPage() {
   return (
     <div className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 md:py-14">
-      <PageHeader guide
+      <PageHeader guide="activity"
         title="Activity"
         description="Events the Accrue program emits, read straight from transaction logs. No indexer or backend."
       />
@@ -18,7 +17,6 @@ export default function ActivityPage() {
           <ActivityFeed />
         </Suspense>
       </div>
-      <PageGuide page="activity" />
     </div>
   );
 }

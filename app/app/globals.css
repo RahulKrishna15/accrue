@@ -2,8 +2,9 @@
 
 /*
   Accrue tokens. Brand palette: olive #606C38, forest #283618, ivory #FEFAE0,
-  amber #DDA15E, burnt orange #BC6C25. Light mode sits on a near-neutral paper
-  with a faint sage cast (not ivory), so forest and amber carry the colour.
+  amber #DDA15E, burnt orange #BC6C25. Light mode sits on clean neutral paper
+  with white surfaces; earnings cards use honey paper (not forest) with olive ink
+  and burnt-orange amounts, and chart bars are slate moss. Dark mode keeps forest.
   Derived tints/shades stay in these hues; the only added hue is one red for
   errors. Ratios are measured (WCAG 2.x).
 
@@ -17,7 +18,8 @@
                    focus rings, large/bold text only (4.0:1 on bg)
   - accent-strong  darker burnt orange for small text and labelled buttons
   - income         amber: income / earning only. Never text on light bg (2.1:1)
-  - panel-*        forest "earnings" surface where amber can be text (5.7:1)
+  - panel-*        "earnings" surface: honey in light, forest in dark
+  - bar / on-bar   chart bar fill and the text on it
 
   Z scale (the only z-index values used): decor layers -1 inside an isolated
   parent, sticky header z-30, popovers and the demo panel z-40. Dialogs use the
@@ -30,33 +32,38 @@
   Each theme sets its own strength so text keeps the ratios above.
 */
 :root {
-  --bg: #f6f6f0; /* paper, faint sage */
-  --surface: #fcfcf8; /* raised paper */
-  --sunk: #ebece3; /* inset sage */
+  --bg: #f8f8f5; /* clean neutral paper */
+  --surface: #ffffff; /* raised paper */
+  --sunk: #efeee9; /* inset stone */
   --ink: #1f2a14; /* deep forest, 13.8:1 on bg */
-  --muted: #596150; /* 6.0:1 on bg, 5.4:1 on sunk */
-  --line: rgb(31 42 20 / 0.11);
-  --line-strong: #7f8571; /* input borders, 3.6:1 on surface */
+  --muted: #5c5a50; /* 6.5:1 on bg, 6.0:1 on sunk */
+  --line: rgb(43 42 28 / 0.1);
+  --line-strong: #85826f; /* input borders, 3.6:1 on surface */
   --primary: #283618; /* forest */
-  --on-primary: #f6f6f0; /* 11.9:1 */
+  --on-primary: #f8f8f5; /* 11.9:1 */
   --accent: #b4641f; /* 4.0:1: large text, icons, focus */
   --accent-strong: #8a4c17; /* 6.2:1 on bg; paper label on it 6.5:1 */
-  --on-accent: #fcfcf8;
+  --on-accent: #ffffff;
   --accent-soft: rgb(180 100 31 / 0.1);
   --income: #dda15e;
   --income-soft: rgb(221 161 94 / 0.26);
   --danger: #a33a2a; /* 6.1:1 on bg */
   --danger-soft: rgb(163 58 42 / 0.08);
-  --panel: #283618;
-  --panel-ink: #fefae0; /* 12.2:1 */
-  --panel-muted: #b7be8f; /* 6.6:1 */
-  --panel-income: #dda15e; /* 5.7:1 */
-  --panel-line: rgb(254 250 224 / 0.14);
-  --shadow: rgb(31 42 20 / 0.06);
+  /* Light earnings surface: honey paper instead of forest, so cards read warm and light. */
+  --panel: #fcf1df;
+  --panel-ink: #2b2a1c; /* 13.0:1 */
+  --panel-muted: #6e6048; /* 5.5:1, 4.9:1 in the glow corner */
+  --panel-income: #9a4f14; /* 5.4:1 */
+  --panel-line: rgb(154 79 20 / 0.16);
+  --panel-glow: rgb(239 197 138 / 0.55);
+  --panel-grain: 0;
+  --bar: #646b57; /* chart bars, slate moss: holdings read as ink, income stays amber */
+  --on-bar: #ffffff; /* 5.6:1; 4.8:1 against the empty track */
+  --shadow: rgb(84 60 24 / 0.07);
   --wash: color-mix(in oklab, var(--income) 16%, var(--bg));
   --dots: rgb(31 42 20 / 0.14);
   --glow: rgb(221 161 94 / 0.22);
-  --lift: rgb(31 42 20 / 0.14);
+  --lift: rgb(84 60 24 / 0.16);
   color-scheme: light;
 }
 
@@ -83,6 +90,10 @@
   --panel-muted: #b7be8f;
   --panel-income: #dda15e;
   --panel-line: rgb(254 250 224 / 0.12);
+  --panel-glow: color-mix(in oklab, var(--panel-income) 20%, transparent);
+  --panel-grain: 0.09;
+  --bar: #606c38;
+  --on-bar: #fefae0;
   --shadow: rgb(10 14 6 / 0.4);
   --wash: color-mix(in oklab, var(--income) 14%, var(--bg));
   --dots: rgb(183 190 143 / 0.16);
@@ -114,6 +125,8 @@
   --color-panel-muted: var(--panel-muted);
   --color-panel-income: var(--panel-income);
   --color-panel-line: var(--panel-line);
+  --color-bar: var(--bar);
+  --color-on-bar: var(--on-bar);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
   /* Shape rule: panels 14px, controls 10px, status badges full pill. */
@@ -223,14 +236,14 @@ input[type="range"] {
 */
 .forest-panel {
   background:
-    radial-gradient(70% 90% at 100% 0%, color-mix(in oklab, var(--panel-income) 20%, transparent), transparent 70%),
+    radial-gradient(70% 90% at 100% 0%, var(--panel-glow), transparent 70%),
     var(--panel);
   clip-path: inset(0 round var(--radius-panel));
   box-shadow: inset 0 0 0 1px var(--panel-line);
 }
 .forest-panel-bl {
   background:
-    radial-gradient(70% 110% at 0% 100%, color-mix(in oklab, var(--panel-income) 20%, transparent), transparent 70%),
+    radial-gradient(70% 110% at 0% 100%, var(--panel-glow), transparent 70%),
     var(--panel);
 }
 .forest-panel::after {
@@ -239,7 +252,7 @@ input[type="range"] {
   inset: 0;
   z-index: -1;
   pointer-events: none;
-  opacity: 0.09;
+  opacity: var(--panel-grain);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 .98 0 0 0 0 .88 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
 

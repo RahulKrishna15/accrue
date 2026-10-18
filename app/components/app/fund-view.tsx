@@ -12,6 +12,7 @@ import { useWallet } from "@/lib/wallet/context";
 import { EarningsCard } from "../earnings-card";
 import { FadeIn } from "../motion";
 import { Amount, EmptyState, FundMark, Panel, Skeleton, Stat, StatusBadge, buttonClass, enter } from "../ui";
+import { PageGuide } from "../page-guide";
 import { RecentActivitySkeleton, RecentActivityTable } from "./activity-feed";
 import { CapMeter } from "./funds-explorer";
 import { InvestPanel } from "./invest-panel";
@@ -48,9 +49,12 @@ function FundDetail({ fund }: { fund: Fund }) {
 
   return (
     <>
-      <Link href="/funds" className="enter mb-6 inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink">
-        <ArrowLeft size={16} aria-hidden /> All funds
-      </Link>
+      <div className="enter mb-6 flex items-center justify-between gap-4">
+        <Link href="/funds" className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-ink">
+          <ArrowLeft size={16} aria-hidden /> All funds
+        </Link>
+        <PageGuide page="fund" />
+      </div>
       <div className="enter flex flex-col gap-4 pb-8 sm:flex-row sm:items-center" style={enter(1)}>
         <FundMark symbol={fund.metadata.symbol} image={fund.metadata.image} size={56} />
         <div className="min-w-0 flex-1">
@@ -64,7 +68,7 @@ function FundDetail({ fund }: { fund: Fund }) {
         </div>
       </div>
 
-      <div className="enter grid gap-8 lg:grid-cols-[minmax(0,1fr)_24rem]" style={enter(2)}>
+      <div className="enter grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_24rem]" style={enter(2)}>
         <div className="flex flex-col gap-8">
           <Panel className="p-5 sm:p-6">
             <dl className="grid grid-cols-2 gap-x-6 gap-y-6 sm:grid-cols-3">
@@ -189,7 +193,7 @@ function FundSkeleton() {
           <Skeleton className="h-4 w-40" />
         </div>
       </div>
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_24rem]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_24rem]">
         <div className="flex flex-col gap-8">
           <Skeleton className="h-64 rounded-panel" />
           <Skeleton className="h-20" />

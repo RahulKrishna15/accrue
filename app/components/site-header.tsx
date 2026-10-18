@@ -28,7 +28,7 @@ export function Logo() {
   );
 }
 
-/** Brand mark: income rising over the fund. Forest square, amber half-disc, same in both themes. */
+/** Brand mark: income rising over the fund. Fixed brand colours (not panel tokens), same in both themes. */
 export function LogoMark({ size = 28 }: { size?: number }) {
   return (
     <svg aria-hidden width={size} height={size} viewBox="0 0 28 28" className="shrink-0">
@@ -38,11 +38,11 @@ export function LogoMark({ size = 28 }: { size?: number }) {
         </clipPath>
       </defs>
       <g clipPath="url(#accrue-mark)">
-        <rect width="28" height="28" fill="var(--panel)" />
-        <circle cx="14" cy="27" r="10" fill="var(--panel-income)" />
-        <rect x="5" y="27" width="18" height="1" fill="var(--panel)" />
+        <rect width="28" height="28" fill="#283618" />
+        <circle cx="14" cy="27" r="10" fill="#dda15e" />
+        <rect x="5" y="27" width="18" height="1" fill="#283618" />
       </g>
-      <rect x="0.5" y="0.5" width="27" height="27" rx="7.5" fill="none" stroke="var(--panel-line)" />
+      <rect x="0.5" y="0.5" width="27" height="27" rx="7.5" fill="none" stroke="rgb(254 250 224 / 0.14)" />
     </svg>
   );
 }

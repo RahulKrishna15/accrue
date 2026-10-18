@@ -14,7 +14,7 @@ import { EarningsCard } from "../earnings-card";
 import { LiveAmount } from "../live-amount";
 import { FadeIn, NumberTicker } from "../motion";
 import { TxStatus } from "../tx-status";
-import { Amount, Button, EmptyState, Skeleton, buttonClass, enter } from "../ui";
+import { Amount, Button, EmptyState, Skeleton, buttonClass, cx, enter } from "../ui";
 
 export function PortfolioView() {
   return (
@@ -100,43 +100,51 @@ function PortfolioSummary({ positions, usdc }: { positions: Position[]; usdc: bi
 
   return (
     <section aria-label="Portfolio totals" className="enter flex flex-col gap-3">
-      <div className="grid overflow-hidden rounded-panel border border-line bg-surface lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
-        <div className="flex flex-col gap-5 p-6 sm:p-8">
-          <div>
-            <h2 className="text-sm text-muted">Claimable now, all funds</h2>
-            <LiveAmount
-              positions={positions}
-              now={accrue.now}
-              className="mt-2 block text-[clamp(2.5rem,7vw,4rem)] leading-none font-medium tracking-tight text-ink"
-              tailClassName="text-[0.45em] text-muted"
-            />
-            <p className="mt-3 flex items-center gap-2 text-sm text-muted">
-              {perDay > 0n ? (
-                <>
-                  <span aria-hidden className="live-dot size-2 rounded-full bg-income" />
-                  Growing by <span className="num text-ink">${formatUnits(perDay, 2)}</span> a day from {earning} {earning === 1 ? "fund" : "funds"}
-                </>
-              ) : (
-                "Not growing right now. Income starts when a manager deposits it."
-              )}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Claim is never blocked by pause or close; it only needs something to claim. */}
-            <Button
-              variant="accent"
-              disabled={tx.busy || toClaim.length === 0}
-              onClick={() => address && tx.run(address, toClaim.map((p) => getClaimInstruction({ owner: address, mint: p.fund.mint })))}
-            >
-              {claimLabel}
-            </Button>
-            {toClaim.length === CLAIM_ALL_MAX && claimable.filter((v) => v > 0n).length > CLAIM_ALL_MAX ? (
-              <span className="text-sm text-muted">Claims the first {CLAIM_ALL_MAX}; run it again for the rest.</span>
-            ) : null}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">
+        {/* The live card: same earnings surface as the position cards (honey in light, forest in dark), so it reads as the one thing that moves. */}
+        <div className="rounded-panel shadow-[0_28px_60px_-30px_var(--lift)]">
+          <div className="forest-panel relative isolate flex h-full flex-col gap-6 rounded-panel p-6 text-panel-ink sm:p-8">
+            <div className="flex items-start justify-between gap-4">
+              <h2 className="text-sm text-panel-muted">Claimable now, all funds</h2>
+              <span className="inline-flex shrink-0 items-center gap-2 rounded-full border border-panel-line px-2.5 py-1 text-xs font-medium">
+                <span aria-hidden className={cx("size-2 rounded-full", perDay > 0n ? "live-dot bg-panel-income" : "bg-panel-muted")} />
+                {perDay > 0n ? "Live" : "Not streaming"}
+              </span>
+            </div>
+            <div>
+              <LiveAmount
+                positions={positions}
+                now={accrue.now}
+                className="block text-[clamp(2.75rem,8vw,4.5rem)] leading-none font-medium tracking-tight text-panel-income"
+                tailClassName="text-[0.42em] text-panel-muted"
+              />
+              <p className="mt-3 text-sm text-panel-muted">
+                {perDay > 0n ? (
+                  <>
+                    Growing by <span className="num text-panel-ink">${formatUnits(perDay, 2)}</span> a day from {earning} {earning === 1 ? "fund" : "funds"}
+                  </>
+                ) : (
+                  "Not growing right now. Income starts when a manager deposits it."
+                )}
+              </p>
+            </div>
+            <div className="mt-auto flex flex-wrap items-center gap-3">
+              {/* Claim is never blocked by pause or close; it only needs something to claim. */}
+              <Button
+                variant="accent"
+                disabled={tx.busy || toClaim.length === 0}
+                onClick={() => address && tx.run(address, toClaim.map((p) => getClaimInstruction({ owner: address, mint: p.fund.mint })))}
+              >
+                {claimLabel}
+              </Button>
+              {toClaim.length === CLAIM_ALL_MAX && claimable.filter((v) => v > 0n).length > CLAIM_ALL_MAX ? (
+                <span className="text-sm text-panel-muted">Claims the first {CLAIM_ALL_MAX}; run it again for the rest.</span>
+              ) : null}
+            </div>
           </div>
         </div>
 
-        <div className="flex flex-col gap-5 border-t border-line bg-sunk/60 p-6 sm:p-8 lg:border-t-0 lg:border-l">
+        <div className="flex flex-col gap-5 rounded-panel border border-line bg-surface p-6 sm:p-8">
           <div>
             <div className="flex items-baseline justify-between gap-4">
               <h2 className="text-sm text-muted">Income earned so far</h2>
@@ -147,12 +155,12 @@ function PortfolioSummary({ positions, usdc }: { positions: Position[]; usdc: bi
               role="img"
               aria-label={earned > 0n ? `${Math.round(claimedPct)}% claimed, the rest ready to claim` : "No income earned yet"}
             >
-              <span className="h-full bg-primary" style={{ width: `${claimedPct}%` }} />
+              <span className="h-full bg-bar" style={{ width: `${claimedPct}%` }} />
               <span className="h-full flex-1 bg-income" style={{ display: ready > 0n ? undefined : "none" }} />
             </div>
             <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-sm">
               <div className="flex items-center gap-2">
-                <span aria-hidden className="size-2.5 rounded-full bg-primary" />
+                <span aria-hidden className="size-2.5 rounded-full bg-bar" />
                 <dt className="text-muted">Claimed</dt>
                 <dd>
                   <NumberTicker value={claimed} prefix="$" className="text-ink" />

@@ -112,50 +112,56 @@ export function FundsExplorer() {
         </p>
       ) : (
         <FadeIn>
-          {/* Desktop table */}
-          <table className="hidden w-full border-separate border-spacing-0 text-left md:table">
-            <caption className="sr-only">All funds</caption>
-            <thead>
-              <tr className="text-sm text-muted">
-                <th scope="col" className="border-b border-line pb-3 font-normal">Fund</th>
-                <th scope="col" className="border-b border-line pb-3 text-right font-normal">Price</th>
-                <th scope="col" className="border-b border-line pb-3 pl-8 font-normal">Raised of cap</th>
-                <th scope="col" className="border-b border-line pb-3 text-right font-normal">Fee</th>
-                <th scope="col" className="border-b border-line pb-3 text-right font-normal">Income / day</th>
-                <th scope="col" className="border-b border-line pb-3 pl-8 font-normal">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              <AnimatePresence initial={true}>
-              {shown.map((f, i) => (
-                <motion.tr key={f.mint} className="group" {...rowMotion(i)}>
-                  <td className="py-4 pr-4">
-                    <Link href={`/funds/${f.mint}`} className="flex items-center gap-3 rounded-control">
-                      <FundMark symbol={f.metadata.symbol} image={f.metadata.image} />
-                      <span>
-                        <span className="block font-medium text-ink group-hover:underline group-hover:underline-offset-4">{f.metadata.name}</span>
-                        <span className="num text-sm text-muted">{f.metadata.symbol}</span>
-                      </span>
-                    </Link>
-                  </td>
-                  <td className="py-4 text-right">
-                    <Amount value={f.price} />
-                  </td>
-                  <td className="py-4 pl-8">
-                    <CapMeter fund={f} />
-                  </td>
-                  <td className="num py-4 text-right">{formatBps(f.feeBps)}</td>
-                  <td className="py-4 text-right">
-                    <DailyIncome fund={f} nowSec={nowSec} />
-                  </td>
-                  <td className="py-4 pl-8">
-                    <StatusBadge paused={f.paused} closed={f.closed} />
-                  </td>
-                </motion.tr>
-              ))}
-              </AnimatePresence>
-            </tbody>
-          </table>
+          {/* Desktop table, framed like the other panels */}
+          <div className="hidden overflow-hidden rounded-panel border border-line bg-surface md:block">
+            <table className="w-full border-separate border-spacing-0 text-left">
+              <caption className="sr-only">All funds</caption>
+              <thead>
+                <tr className="bg-sunk text-sm text-muted [&>th]:border-b [&>th]:border-line [&>th]:px-5 [&>th]:py-3 [&>th]:font-medium">
+                  <th scope="col">Fund</th>
+                  <th scope="col" className="text-right">Price</th>
+                  <th scope="col">Raised of cap</th>
+                  <th scope="col" className="text-right">Fee</th>
+                  <th scope="col" className="text-right">Income / day</th>
+                  <th scope="col">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <AnimatePresence initial={true}>
+                {shown.map((f, i) => (
+                  <motion.tr
+                    key={f.mint}
+                    className="group [&>td]:px-5 [&>td]:py-4 [&:not(:first-child)>td]:border-t [&>td]:border-line hover:[&>td]:bg-sunk/50"
+                    {...rowMotion(i)}
+                  >
+                    <td>
+                      <Link href={`/funds/${f.mint}`} className="flex items-center gap-3 rounded-control">
+                        <FundMark symbol={f.metadata.symbol} image={f.metadata.image} />
+                        <span>
+                          <span className="block font-medium text-ink group-hover:underline group-hover:underline-offset-4">{f.metadata.name}</span>
+                          <span className="num text-sm text-muted">{f.metadata.symbol}</span>
+                        </span>
+                      </Link>
+                    </td>
+                    <td className="text-right">
+                      <Amount value={f.price} />
+                    </td>
+                    <td>
+                      <CapMeter fund={f} />
+                    </td>
+                    <td className="num text-right">{formatBps(f.feeBps)}</td>
+                    <td className="text-right">
+                      <DailyIncome fund={f} nowSec={nowSec} />
+                    </td>
+                    <td>
+                      <StatusBadge paused={f.paused} closed={f.closed} />
+                    </td>
+                  </motion.tr>
+                ))}
+                </AnimatePresence>
+              </tbody>
+            </table>
+          </div>
 
           {/* Mobile: stacked rows */}
           <ul className="flex flex-col gap-3 md:hidden">
@@ -213,7 +219,7 @@ export function CapMeter({ fund }: { fund: Fund }) {
       </p>
       <div className="h-1 w-full overflow-hidden rounded-full bg-sunk" aria-hidden>
         <motion.div
-          className="h-full origin-left rounded-full bg-[#606c38]"
+          className="h-full origin-left rounded-full bg-bar"
           initial={{ scaleX: 0 }}
           animate={{ scaleX: Math.min(100, pct) / 100 }}
           transition={{ ...spring, delay: 0.15 }}

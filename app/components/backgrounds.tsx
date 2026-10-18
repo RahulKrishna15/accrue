@@ -19,7 +19,7 @@ export function HeroBackdrop() {
   );
 }
 
-/** Forest surface with an amber glow from one corner and fixed fine grain. Text on it uses the panel-* tokens. */
+/** Earnings surface (honey in light, forest in dark) with a glow from one corner. Text on it uses the panel-* tokens. */
 export function ForestPanel({
   children,
   className,

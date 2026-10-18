@@ -58,14 +58,14 @@ export function FairSplit() {
                 t > 0 ? (
                   <div key={a} className="absolute inset-y-0" style={{ left: `${(a / 30) * 100}%`, width: `${((b - a) / 30) * 100}%` }}>
                     <motion.div
-                      className="absolute inset-0 origin-left border-r-2 border-surface bg-[#606c38]"
+                      className="absolute inset-0 origin-left border-r-2 border-surface bg-bar"
                       initial={{ scaleX: 0 }}
                       whileInView={{ scaleX: 1 }}
                       viewport={{ once: true, amount: 0.8 }}
                       transition={{ ...spring, delay: hi * 0.14 + si * 0.1 }}
                     />
                     <motion.span
-                      className="num relative flex h-full items-center truncate px-2 text-xs text-[#fefae0]"
+                      className="num relative flex h-full items-center truncate px-2 text-xs text-on-bar"
                       initial={{ opacity: 0 }}
                       whileInView={{ opacity: 1 }}
                       viewport={{ once: true, amount: 0.8 }}

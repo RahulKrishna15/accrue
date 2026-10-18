@@ -1,6 +1,8 @@
-import { CaretDown, Question } from "@phosphor-icons/react/ssr";
+import { CaretDown } from "@phosphor-icons/react/ssr";
 import type { ButtonHTMLAttributes, ComponentProps, CSSProperties, ReactNode } from "react";
 import { formatUnits } from "@/lib/accrue/format";
+import type { GuideKey } from "@/lib/guide";
+import { PageGuide } from "./page-guide";
 
 export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
@@ -157,8 +159,8 @@ export function Select({ className, size = "md", children, ...props }: Omit<Comp
   );
 }
 
-/** `guide` adds a link to the page's "How this page works" section (components/page-guide.tsx). */
-export function PageHeader({ title, description, actions, guide }: { title: string; description?: ReactNode; actions?: ReactNode; guide?: boolean }) {
+/** `guide` adds the "How this page works" button that opens that page's guide dialog (components/page-guide.tsx). */
+export function PageHeader({ title, description, actions, guide }: { title: string; description?: ReactNode; actions?: ReactNode; guide?: GuideKey }) {
   return (
     <div className="flex flex-col gap-4 pb-8 sm:flex-row sm:items-end sm:justify-between">
       <div className="max-w-[65ch]">
@@ -169,14 +171,9 @@ export function PageHeader({ title, description, actions, guide }: { title: stri
           </p>
         ) : null}
         {guide ? (
-          <a
-            href="#guide"
-            className="enter mt-3 inline-flex items-center gap-1.5 rounded-control text-sm font-medium text-accent-strong underline-offset-4 hover:underline"
-            style={enter(1)}
-          >
-            <Question size={16} aria-hidden />
-            How this page works
-          </a>
+          <div className="enter mt-3" style={enter(1)}>
+            <PageGuide page={guide} />
+          </div>
         ) : null}
       </div>
       {actions ? (
