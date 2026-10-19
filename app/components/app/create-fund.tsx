@@ -3,7 +3,7 @@
 import type { Address } from "@solana/kit";
 import { ArrowRight, Check } from "@phosphor-icons/react";
 import Link from "next/link";
-import { useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { accrue } from "@/lib/accrue";
 import { MAX_FEE_BPS, SECONDS_PER_DAY } from "@/lib/accrue/constants";
 import { formatUnits, parseUnits } from "@/lib/accrue/format";
@@ -26,6 +26,28 @@ type Form = {
 };
 
 const initial: Form = { name: "", symbol: "", image: "", price: "1.00", fee: "5", min: "100", cap: "1000000", period: "30" };
+
+/** Unfinished form input survives leaving the page and reloads; it is cleared once the fund is created. */
+const DRAFT_KEY = "accrue-create-fund-draft";
+const isInitial = (f: Form) => (Object.keys(initial) as (keyof Form)[]).every((k) => f[k] === initial[k]);
+
+function loadDraft(): Form {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    return raw ? { ...initial, ...(JSON.parse(raw) as Partial<Form>) } : initial;
+  } catch {
+    return initial;
+  }
+}
+
+function saveDraft(f: Form | null) {
+  try {
+    if (!f || isInitial(f)) localStorage.removeItem(DRAFT_KEY);
+    else localStorage.setItem(DRAFT_KEY, JSON.stringify(f));
+  } catch {
+    // Storage blocked (private mode): the draft just isn't kept.
+  }
+}
 const PERIODS = ["7", "30", "90"];
 
 function validate(f: Form) {
@@ -62,11 +84,40 @@ function CreateFundForm() {
   const id = useId();
   const { address } = useWallet();
   const tx = useTransaction();
-  const [f, setF] = useState<Form>(initial);
+  // Mounts only in the browser (ConnectGate shows a skeleton until wallet state is known), so storage is safe to read here.
+  const [f, setF] = useState<Form>(loadDraft);
   const [touched, setTouched] = useState<Partial<Record<keyof Form, boolean>>>({});
   const [submitted, setSubmitted] = useState(false);
   const [created, setCreated] = useState<Address | null>(null);
   const errors = useMemo(() => validate(f), [f]);
+  const createdRef = useRef(false);
+  const { reset: resetTx } = tx;
+
+  // Keep the draft in step with the form, but never re-save a form that was just submitted.
+  useEffect(() => {
+    if (!createdRef.current) saveDraft(f);
+  }, [f]);
+
+  // Next keeps this page alive in the background (cacheComponents), and hiding it runs effect cleanups.
+  // After a successful create, leaving the page resets it, so coming back opens an empty form.
+  useEffect(
+    () => () => {
+      if (!createdRef.current) return;
+      createdRef.current = false;
+      setCreated(null);
+      setF(initial);
+      setTouched({});
+      setSubmitted(false);
+      resetTx();
+    },
+    [resetTx],
+  );
+
+  const clearDraft = () => {
+    setF(initial);
+    setTouched({});
+    setSubmitted(false);
+  };
   const err = (k: keyof Form) => ((touched[k] || submitted) && errors[k]) || null;
 
   const set = (k: keyof Form) => (e: React.ChangeEvent<HTMLInputElement>) => setF((p) => ({ ...p, [k]: k === "symbol" ? e.target.value.toUpperCase() : e.target.value }));
@@ -92,7 +143,11 @@ function CreateFundForm() {
       }),
       getInitExtraAccountMetaListInstruction({ payer: address, mint }),
     ]);
-    if (ok) setCreated(mint);
+    if (ok) {
+      createdRef.current = true;
+      saveDraft(null);
+      setCreated(mint);
+    }
   }
 
   if (created && tx.state.phase === "success") {
@@ -199,6 +254,14 @@ function CreateFundForm() {
           <Button type="submit" variant="accent" size="lg" disabled={tx.busy}>
             {tx.state.phase === "signing" ? "Approve in wallet" : tx.state.phase === "confirming" ? "Confirming" : "Create fund"}
           </Button>
+          {!isInitial(f) && tx.state.phase === "idle" ? (
+            <p className="flex items-center justify-between gap-3 text-sm text-muted">
+              Draft saved on this device.
+              <button type="button" onClick={clearDraft} className="rounded-control font-medium text-accent-strong underline-offset-4 hover:underline">
+                Start over
+              </button>
+            </p>
+          ) : null}
           {submitted && Object.keys(errors).length > 0 && tx.state.phase === "idle" ? (
             <p className="text-sm text-danger" role="alert">
               Fix the highlighted fields first.

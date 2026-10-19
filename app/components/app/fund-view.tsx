@@ -1,7 +1,7 @@
 "use client";
 
 import type { Address } from "@solana/kit";
-import { ArrowLeft, ArrowRight, MagnifyingGlass } from "@phosphor-icons/react";
+import { ArrowLeft, ArrowRight, ArrowSquareOut, MagnifyingGlass } from "@phosphor-icons/react";
 import Link from "next/link";
 import { accrue } from "@/lib/accrue";
 import { formatBps, formatDate, formatDuration, formatUnits, shortAddress } from "@/lib/accrue/format";
@@ -63,7 +63,8 @@ function FundDetail({ fund }: { fund: Fund }) {
             <StatusBadge paused={fund.paused} closed={fund.closed} />
           </div>
           <p className="mt-1 text-sm text-muted">
-            <span className="num">{fund.metadata.symbol}</span> share mint <span className="num">{shortAddress(fund.mint, 6)}</span>
+            <span className="num">{fund.metadata.symbol}</span> share mint{" "}
+            <MintLink mint={fund.mint} />
           </p>
         </div>
       </div>
@@ -201,5 +202,25 @@ function FundSkeleton() {
         <Skeleton className="h-96 rounded-panel" />
       </div>
     </div>
+  );
+}
+
+/** The share mint on Solana Explorer, where the token, its metadata and holders can be checked. */
+function MintLink({ mint }: { mint: Address }) {
+  const url = accrue.explorerAddressUrl(mint);
+  const label = <span className="num">{shortAddress(mint, 6)}</span>;
+  if (!url) return label;
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      title={mint}
+      aria-label={`Share mint ${shortAddress(mint, 6)} on Solana Explorer, opens in a new tab`}
+      className="inline-flex items-center gap-1 rounded-control font-medium text-accent-strong underline-offset-4 hover:underline"
+    >
+      {label}
+      <ArrowSquareOut size={13} aria-hidden />
+    </a>
   );
 }

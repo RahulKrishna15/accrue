@@ -47,6 +47,8 @@
   --accent-soft: rgb(180 100 31 / 0.1);
   --income: #dda15e;
   --income-soft: rgb(221 161 94 / 0.26);
+  --open: #4f8a2b; /* status dot for open funds, leaf green; 3:1+ as a graphic */
+  --open-soft: rgb(79 138 43 / 0.1);
   --danger: #a33a2a; /* 6.1:1 on bg */
   --danger-soft: rgb(163 58 42 / 0.08);
   /* Light earnings surface: honey paper instead of forest, so cards read warm and light. */
@@ -83,6 +85,8 @@
   --accent-soft: rgb(224 138 62 / 0.14);
   --income: #dda15e;
   --income-soft: rgb(221 161 94 / 0.22);
+  --open: #a6c46a;
+  --open-soft: rgb(166 196 106 / 0.12);
   --danger: #e8836b;
   --danger-soft: rgb(232 131 107 / 0.12);
   --panel: #283618;
@@ -118,6 +122,8 @@
   --color-accent-soft: var(--accent-soft);
   --color-income: var(--income);
   --color-income-soft: var(--income-soft);
+  --color-open: var(--open);
+  --color-open-soft: var(--open-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-panel: var(--panel);
@@ -318,7 +324,10 @@ input[type="range"] {
   }
 }
 
-/* Live marker beside a growing amount: an amber ring breathes out every 2s. */
+/*
+  Live marker: a ring breathes out from the dot every 2s. Amber by default (income);
+  set --dot-glow for another colour, e.g. the open-fund status dot.
+*/
 @media (prefers-reduced-motion: no-preference) {
   .live-dot {
     animation: live-dot 2s ease-out infinite;
@@ -326,7 +335,7 @@ input[type="range"] {
 }
 @keyframes live-dot {
   0% {
-    box-shadow: 0 0 0 0 var(--income-soft);
+    box-shadow: 0 0 0 0 var(--dot-glow, var(--income-soft));
   }
   70%,
   100% {

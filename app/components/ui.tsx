@@ -223,13 +223,22 @@ export function FundMark({ symbol, image, size = 40 }: { symbol: string; image?:
   );
 }
 
+/**
+ * Fund status as a dot and a word. Open funds get a softly pulsing green dot (taking money now);
+ * paused is a still burnt-orange dot, closed a still grey one.
+ */
 export function StatusBadge({ paused, closed }: { paused: boolean; closed: boolean }) {
-  const [label, cls] = paused
-    ? ["Paused", "bg-accent-soft text-accent-strong"]
+  const [label, pill, dot] = paused
+    ? ["Paused", "bg-accent-soft text-accent-strong", "bg-accent"]
     : closed
-      ? ["Closed", "bg-sunk text-muted"]
-      : ["Open", "border border-line-strong text-ink"];
-  return <span className={cx("inline-flex h-6 items-center rounded-full px-2.5 text-xs font-medium", cls)}>{label}</span>;
+      ? ["Closed", "bg-sunk text-muted", "bg-line-strong"]
+      : ["Open", "bg-open-soft text-ink", "live-dot bg-open [--dot-glow:color-mix(in_oklab,var(--open)_45%,transparent)]"];
+  return (
+    <span className={cx("inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full pr-2.5 pl-2 text-xs font-medium", pill)}>
+      <span aria-hidden className={cx("size-2 rounded-full", dot)} />
+      {label}
+    </span>
+  );
 }
 
 export function Stat({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
